@@ -96,26 +96,6 @@ LGPD / Audit (opcional na implementação inicial, recomendado no design):
 
 ---
 
-<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
-
-  <!-- Próximo -->
-  <a href="./2_design.md"
-     style="
-       flex: 1;
-       padding: 12px 16px;
-       border: 1px solid #d0d7de;
-       border-radius: 6px;
-       text-decoration: none;
-       color: inherit;
-       text-align: right;
-     ">
-    Design Arquitetural
-  </a>
-
-</div>
-
----
-
 | **Próximo** |
 |---------------|
 | [Design Arquitetural](./2_design.md) |

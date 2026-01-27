@@ -99,3 +99,9 @@ Adotar **Soft Delete** como estratégia padrão para entidades de domínio, mant
 ## Conclusão
 
 O **Soft Delete** como padrão, combinado com **políticas de retenção e anonimização**, oferece o melhor equilíbrio entre **conformidade LGPD**, **integridade do domínio**, **rastreabilidade** e **manutenibilidade**. O **Hard Delete** permanece restrito a dados técnicos ou a processos controlados, reduzindo riscos legais e operacionais.
+
+--- 
+
+| **Anterior** |
+|---------------|
+| [ADR-006: LGPD Logging e Auditoria](./8_adr_006_lgpd.md) |
