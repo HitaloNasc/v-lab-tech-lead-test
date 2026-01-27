@@ -38,3 +38,33 @@ class OfferRead(BaseModel):
     @classmethod
     def from_domain(cls, offer: Offer):
         return cls(**offer.__dict__)
+
+
+class ErrorDetail(BaseModel):
+    field: Optional[str]
+    reason: str
+
+
+class ErrorBody(BaseModel):
+    code: str
+    message: str
+    details: Optional[List[ErrorDetail]]
+    request_id: Optional[str]
+
+
+class ErrorEnvelope(BaseModel):
+    error: ErrorBody
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "application_deadline must be after publication_date",
+                    "details": [
+                        {"field": "application_deadline", "reason": "must be after publication_date"}
+                    ],
+                    "request_id": "req_e353920d7e7c4557",
+                }
+            }
+        }

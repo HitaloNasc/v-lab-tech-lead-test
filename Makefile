@@ -1,10 +1,3 @@
-reset-db:
-	docker-compose down -v
-	docker-compose up -d db
-	sleep 3
-	docker-compose run --rm api alembic upgrade head
-.PHONY: help run run-docker test coverage lint format clean
-
 help:
 	@echo "Available commands:"
 	@echo "  make run        - Run the API locally"
@@ -37,3 +30,10 @@ format:
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov
+
+reset-db:
+	docker-compose down -v
+	docker-compose up -d db
+	sleep 3
+	docker-compose run --rm api alembic upgrade head
+.PHONY: help run run-docker test coverage lint format clean
