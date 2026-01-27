@@ -96,6 +96,7 @@ LGPD / Audit (opcional na implementação inicial, recomendado no design):
 
 ---
 
-| **Próximo** |
-|---------------|
-| [Design Arquitetural](./2_design.md) |
+| **Anterior** | **Próximo** |
+|-----------------|---------------|
+| [Início](./README.md) | [Design Arquitetural](./2_design.md) |
+

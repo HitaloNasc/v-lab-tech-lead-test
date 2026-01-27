@@ -1,0 +1,38 @@
+@startuml
+title Arquitetura em Camadas (Simplificada)
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 120
+
+package "Presentation Layer" as P {
+  [Controllers]
+  [Routes]
+}
+
+package "Application Layer" as A {
+  [Use Cases / Services]
+}
+
+package "Domain Layer" as D {
+  [Entities / Value Objects]
+  [Domain Roles]
+  [Repository Interfaces]
+}
+
+package "Infrastructure Layer" as I {
+  [Repository Implementations]
+  [PostgreSQL]
+  [Auth (JWT/Bcrypt)]
+  [Logging/Rate Limit]
+}
+
+P --> A : calls
+A --> D : uses
+D ..> I : ports implemented by
+I --> D : implements interfaces
+
+@enduml

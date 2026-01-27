@@ -59,6 +59,7 @@ LGPD / Audit (recomendado no design):
 A separação em camadas reduz acoplamento, facilita testes, suporta mudanças frequentes de requisitos e melhora a manutenibilidade em um time pequeno.
 
 ### 3.2 Visão em camadas (alto nível)
+![alt text](./diagrams/layers_simple.png)
 
 ### 3.3 Responsabilidades por camada
 #### Presentation Layer (API)
@@ -247,12 +248,14 @@ Justificativa:
 | ID | Arquivo | Título | Objetivo da Decisão |
 |----|--------|--------|---------------------|
 | ADR-001 | [3_adr_001_layers.md](./3_adr_001_layers.md) | Separação de Camadas | Definir a arquitetura em camadas (Presentation, Application, Domain e Infrastructure) para reduzir acoplamento, facilitar testes e suportar evolução do sistema. |
-| ADR-002 | [4_adr_002_database.md](./4_adr_002_database.md) | Escolha do Banco de Dados | Justificar o uso de PostgreSQL como banco relacional principal, considerando integridade, relacionamentos complexos e LGPD logging. |
-| ADR-003 | [5_adr_003_auth.md](./5_adr_003_auth.md) | Autenticação e Autorização | Definir JWT como mecanismo de autenticação e RBAC como estratégia de autorização para controle de acesso e escalabilidade. |
-| ADR-004 | [6_adr_004_api.md](./6_adr_004_api.md) | Padrão de API | Adotar API RESTful como padrão de integração, favorecendo simplicidade, compatibilidade e manutenibilidade. |
-| ADR-005 | [7_adr_005_versioning.md](./7_adr_005_versioning.md) | Versionamento de API | Estabelecer versionamento por URL (`/api/v1`) para permitir evolução controlada e compatibilidade entre clientes. |
-| ADR-006 | [8_adr_006_lgpd.md](./8_adr_006_lgpd.md) | LGPD Logging e Auditoria | Definir estratégia de auditoria e rastreabilidade de alterações e acessos a dados pessoais para conformidade com LGPD. |
-| ADR-007 | [9_adr_007_delete_strategy.md](./9_adr_007_delete_strategy.md) | Estratégia de Exclusão de Dados | Definir o uso de soft delete como padrão para preservar histórico, integridade e accountability, com hard delete restrito a casos controlados. |
+| ADR-002 | [4_adr_002_database.md](./4_adr_002_database.md) | Escolha do Banco de Dados | Justificar o uso de PostgreSQL como banco relacional principal, considerando integridade, relacionamentos complexos e requisitos de auditoria e LGPD. |
+| ADR-003 | [5_adr_003_auth.md](./5_adr_003_auth.md) | Autenticação e Autorização | Definir JWT como mecanismo de autenticação e RBAC como estratégia de autorização para controle de acesso seguro e escalável. |
+| ADR-004 | [6_adr_004_api.md](./6_adr_004_api.md) | Padrão de API | Adotar API RESTful como padrão de integração, favorecendo simplicidade, interoperabilidade e manutenibilidade. |
+| ADR-005 | [7_adr_005_versioning.md](./7_adr_005_versioning.md) | Versionamento de API | Estabelecer versionamento por URL (`/api/v1`) para permitir evolução controlada e compatibilidade entre múltiplos clientes. |
+| ADR-006 | [8_adr_006_lgpd.md](./8_adr_006_lgpd.md) | LGPD Logging e Auditoria | Definir estratégia de auditoria, rastreabilidade e minimização de dados pessoais para conformidade com a LGPD. |
+| ADR-007 | [9_adr_007_delete_strategy.md](./9_adr_007_delete_strategy.md) | Estratégia de Exclusão de Dados | Definir o uso de *soft delete* como padrão para preservar histórico, integridade referencial e accountability, com *hard delete* restrito a cenários controlados. |
+| ADR-008 | [10_adr_008_api_conventions.md](./10_adr_008_api_conventions.md) | Convenções de API | Estabelecer padrões consistentes para endpoints, payloads, paginação, filtros, status codes e envelope de erros, garantindo previsibilidade, integração facilitada e menor custo de manutenção. |
+| ADR-009 | [11_adr_009_observability.md](./11_adr_009_observability.md) | Observabilidade | Definir estratégia mínima de logging estruturado, métricas, correlação de requisições e preparo para tracing, visando diagnóstico rápido, operação segura e escalabilidade com time reduzido. |
 
 ---
 
