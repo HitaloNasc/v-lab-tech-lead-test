@@ -88,14 +88,6 @@ LGPD / Audit (opcional na implementação inicial, recomendado no design):
 
 ---
 
-## 5. Decisões e Histórico de Mudanças
-
-| Data | Mudança | Motivo | Autor |
-|---|---|---|---|
-| 26/01/2026 | Criação do documento | Início da captura de requisitos | Hítalo Nascimento |
-
----
-
 | **Anterior** | **Próximo** |
 |-----------------|---------------|
 | [Início](./README.md) | [Design Arquitetural](./2_design.md) |
