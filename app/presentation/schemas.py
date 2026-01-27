@@ -4,6 +4,7 @@ from uuid import UUID
 from datetime import datetime
 from app.domain.offer import OfferType, OfferStatus, Offer
 
+
 class OfferCreate(BaseModel):
     institution_id: UUID
     title: str
@@ -12,6 +13,7 @@ class OfferCreate(BaseModel):
     publication_date: datetime
     application_deadline: datetime
 
+
 class OfferUpdate(BaseModel):
     title: Optional[str]
     description: Optional[str]
@@ -19,6 +21,7 @@ class OfferUpdate(BaseModel):
     status: Optional[OfferStatus]
     publication_date: Optional[datetime]
     application_deadline: Optional[datetime]
+
 
 class OfferRead(BaseModel):
     id: UUID
@@ -68,3 +71,28 @@ class ErrorEnvelope(BaseModel):
                 }
             }
         }
+
+
+class InstitutionCreate(BaseModel):
+    name: str
+    description: Optional[str]
+
+
+class InstitutionUpdate(BaseModel):
+    name: Optional[str]
+    description: Optional[str]
+
+
+class InstitutionRead(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: Optional[datetime]
+    deleted_by: Optional[UUID]
+    deletion_reason: Optional[str]
+
+    @classmethod
+    def from_domain(cls, institution):
+        return cls(**institution.__dict__)

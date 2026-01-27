@@ -9,6 +9,7 @@ from app.infrastructure.request_id_middleware import RequestIdMiddleware, get_re
 
 from app.presentation.exception_handlers import register_exception_handlers
 from app.presentation.offer_router import router as offer_router
+from app.presentation.institution_router import router as institution_router
 from app.presentation.schemas import ErrorEnvelope
 
 settings = get_settings()
@@ -18,6 +19,16 @@ register_exception_handlers(app)
 app.add_middleware(RequestIdMiddleware)
 app.include_router(
     offer_router,
+    responses={
+        422: {"model": ErrorEnvelope},
+        409: {"model": ErrorEnvelope},
+        403: {"model": ErrorEnvelope},
+        500: {"model": ErrorEnvelope},
+    },
+)
+
+app.include_router(
+    institution_router,
     responses={
         422: {"model": ErrorEnvelope},
         409: {"model": ErrorEnvelope},
