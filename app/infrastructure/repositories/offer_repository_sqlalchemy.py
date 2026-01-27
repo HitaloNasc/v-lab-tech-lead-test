@@ -8,6 +8,8 @@ from app.domain.offer_repository import OfferRepository
 from app.infrastructure.db import SessionLocal
 from app.infrastructure.repositories.sqlalchemy_models import OfferModel
 from datetime import datetime
+from sqlalchemy.exc import IntegrityError
+from app.domain.errors import NotFoundError
 
 class OfferRepositorySQLAlchemy(OfferRepository):
     def __init__(self, session_factory=SessionLocal):
@@ -17,7 +19,18 @@ class OfferRepositorySQLAlchemy(OfferRepository):
         async with self.session_factory() as session:
             db_offer = OfferModel.from_domain(offer)
             session.add(db_offer)
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError:
+                await session.rollback()
+                # Could be missing institution_id or program_id
+                raise NotFoundError(
+                    message="Institution or program not found",
+                    details=[
+                        {"field": "institution_id", "reason": "not found"},
+                        {"field": "program_id", "reason": "not found"},
+                    ],
+                )
             await session.refresh(db_offer)
             return db_offer.to_domain()
 

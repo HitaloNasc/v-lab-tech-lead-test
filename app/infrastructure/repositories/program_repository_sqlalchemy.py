@@ -3,6 +3,8 @@ from uuid import UUID
 from sqlalchemy.future import select
 from app.domain.program import Program
 from app.domain.program_repository import ProgramRepository
+from sqlalchemy.exc import IntegrityError
+from app.domain.errors import NotFoundError
 from app.infrastructure.db import SessionLocal
 from app.infrastructure.repositories.sqlalchemy_models import ProgramModel
 from datetime import datetime
@@ -16,7 +18,12 @@ class ProgramRepositorySQLAlchemy(ProgramRepository):
         async with self.session_factory() as session:
             db_obj = ProgramModel.from_domain(program)
             session.add(db_obj)
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+                # Likely foreign key violation for institution_id — map to NotFoundError
+                raise NotFoundError(message="Institution not found", details=[{"field": "institution_id", "reason": "not found"}])
             await session.refresh(db_obj)
             return db_obj.to_domain()
 

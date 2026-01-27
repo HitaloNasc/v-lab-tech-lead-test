@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status, Query
 from typing import List, Optional
 from uuid import UUID
 from app.infrastructure.repositories.program_repository_sqlalchemy import ProgramRepositorySQLAlchemy
+from app.infrastructure.repositories.institution_repository_sqlalchemy import InstitutionRepositorySQLAlchemy
 from app.application.program_use_cases import (
     CreateProgram, ListPrograms, GetProgramById, UpdateProgram, DeleteProgram
 )
@@ -17,12 +18,17 @@ def get_program_repo(db: AsyncSession = Depends(get_db)):
     return ProgramRepositorySQLAlchemy(lambda: db)
 
 
+def get_institution_repo(db: AsyncSession = Depends(get_db)):
+    return InstitutionRepositorySQLAlchemy(lambda: db)
+
+
 @router.post("/", response_model=ProgramRead, status_code=status.HTTP_201_CREATED)
 async def create_program(
     payload: ProgramCreate,
     repo: ProgramRepositorySQLAlchemy = Depends(get_program_repo),
+    inst_repo: InstitutionRepositorySQLAlchemy = Depends(get_institution_repo),
 ):
-    use_case = CreateProgram(repo)
+    use_case = CreateProgram(repo, inst_repo)
     program = await use_case.execute(**payload.dict())
     return ProgramRead.from_domain(program)
 

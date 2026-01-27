@@ -19,6 +19,7 @@ class Offer:
         self,
         id: Optional[UUID] = None,
         institution_id: UUID = None,
+        program_id: Optional[UUID] = None,
         title: str = None,
         description: str = None,
         type: OfferType = None,
@@ -33,6 +34,7 @@ class Offer:
     ):
         self.id = id or uuid4()
         self.institution_id = institution_id
+        self.program_id = program_id
         self.title = title
         self.description = description
         self.type = type

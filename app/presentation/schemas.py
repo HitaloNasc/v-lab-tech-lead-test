@@ -7,6 +7,7 @@ from app.domain.offer import OfferType, OfferStatus, Offer
 
 class OfferCreate(BaseModel):
     institution_id: UUID
+    program_id: Optional[UUID]
     title: str
     description: Optional[str]
     type: OfferType
@@ -21,11 +22,13 @@ class OfferUpdate(BaseModel):
     status: Optional[OfferStatus]
     publication_date: Optional[datetime]
     application_deadline: Optional[datetime]
+    program_id: Optional[UUID]
 
 
 class OfferRead(BaseModel):
     id: UUID
     institution_id: UUID
+    program_id: Optional[UUID]
     title: str
     description: Optional[str]
     type: OfferType

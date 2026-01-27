@@ -4,14 +4,20 @@ from datetime import datetime
 
 from app.domain.program import Program
 from app.domain.program_repository import ProgramRepository
+from app.domain.institution_repository import InstitutionRepository
 from app.domain.errors import NotFoundError
 
 
 class CreateProgram:
-    def __init__(self, repo: ProgramRepository):
+    def __init__(self, repo: ProgramRepository, institution_repo: InstitutionRepository):
         self.repo = repo
+        self.institution_repo = institution_repo
 
     async def execute(self, institution_id: UUID, name: str, description: Optional[str] = None) -> Program:
+        # validate institution exists
+        inst = await self.institution_repo.get_by_id(institution_id)
+        if not inst:
+            raise NotFoundError(message="Institution not found", details=[{"field": "institution_id", "reason": "not found"}])
         program = Program(institution_id=institution_id, name=name, description=description)
         return await self.repo.create(program)
 

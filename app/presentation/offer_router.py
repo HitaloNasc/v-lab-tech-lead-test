@@ -3,6 +3,8 @@ from typing import List, Optional
 from uuid import UUID
 from app.domain.offer import OfferType, OfferStatus
 from app.infrastructure.repositories.offer_repository_sqlalchemy import OfferRepositorySQLAlchemy
+from app.infrastructure.repositories.institution_repository_sqlalchemy import InstitutionRepositorySQLAlchemy
+from app.infrastructure.repositories.program_repository_sqlalchemy import ProgramRepositorySQLAlchemy
 from app.application.offer_use_cases import (
     CreateOffer, ListOffers, GetOfferById, UpdateOffer, DeleteOffer
 )
@@ -15,12 +17,22 @@ router = APIRouter(prefix="/api/v1/offers", tags=["offers"])
 def get_offer_repo(db: AsyncSession = Depends(get_db)):
     return OfferRepositorySQLAlchemy(lambda: db)
 
+
+def get_institution_repo(db: AsyncSession = Depends(get_db)):
+    return InstitutionRepositorySQLAlchemy(lambda: db)
+
+
+def get_program_repo(db: AsyncSession = Depends(get_db)):
+    return ProgramRepositorySQLAlchemy(lambda: db)
+
 @router.post("/", response_model=OfferRead, status_code=status.HTTP_201_CREATED)
 async def create_offer(
     offer_in: OfferCreate,
     repo: OfferRepositorySQLAlchemy = Depends(get_offer_repo),
+    inst_repo: InstitutionRepositorySQLAlchemy = Depends(get_institution_repo),
+    prog_repo: ProgramRepositorySQLAlchemy = Depends(get_program_repo),
 ):
-    use_case = CreateOffer(repo)
+    use_case = CreateOffer(repo, inst_repo, prog_repo)
     offer = await use_case.execute(**offer_in.dict())
     return OfferRead.from_domain(offer)
 

@@ -1,10 +1,11 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, String, Text, CheckConstraint
+from sqlalchemy import Column, DateTime, String, Text, CheckConstraint, ForeignKey
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 from app.domain.institution import Institution
 from app.domain.offer import Offer, OfferStatus, OfferType
@@ -23,7 +24,18 @@ class OfferModel(Base):
     )
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
-    institution_id = Column(PG_UUID(as_uuid=True), nullable=False, index=True)
+    institution_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("institutions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    program_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("programs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     type = Column(SqlEnum(OfferType), nullable=False, index=True)
@@ -47,6 +59,7 @@ class OfferModel(Base):
         return Offer(
             id=self.id,
             institution_id=self.institution_id,
+            program_id=self.program_id,
             title=self.title,
             description=self.description,
             type=self.type,
@@ -65,6 +78,7 @@ class OfferModel(Base):
         return cls(
             id=offer.id,
             institution_id=offer.institution_id,
+            program_id=getattr(offer, "program_id", None),
             title=offer.title,
             description=offer.description,
             type=offer.type,
@@ -81,12 +95,19 @@ class OfferModel(Base):
     def update_from_domain(self, offer: Offer):
         self.title = offer.title
         self.description = offer.description
+        # allow updating program_id when present
+        if hasattr(offer, "program_id"):
+            self.program_id = offer.program_id
         self.type = offer.type
         self.status = offer.status
         self.publication_date = offer.publication_date
         self.application_deadline = offer.application_deadline
         self.updated_at = datetime.utcnow()
         # Não atualiza deleted_at, deleted_by, deletion_reason aqui
+
+    # relationships
+    program = relationship("ProgramModel", backref="offers")
+    institution = relationship("InstitutionModel")
 
 
 class InstitutionModel(Base):
@@ -143,7 +164,12 @@ class ProgramModel(Base):
     __tablename__ = "programs"
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
-    institution_id = Column(PG_UUID(as_uuid=True), nullable=False, index=True)
+    institution_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("institutions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=True)
     created_at = Column(
@@ -171,6 +197,9 @@ class ProgramModel(Base):
             deleted_by=self.deleted_by,
             deletion_reason=self.deletion_reason,
         )
+
+    # relationship to InstitutionModel (optional convenience)
+    institution = relationship("InstitutionModel", backref="programs")
 
     @classmethod
     def from_domain(cls, program: Program) -> "ProgramModel":
