@@ -1,0 +1,173 @@
+@startuml
+title Modelo Conceitual de Dados — Ofertas e Candidaturas
+
+hide circle
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam classBorderColor #000000
+skinparam classBackgroundColor #FFFFFF
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 60
+
+' ======================
+' Entidades (conceitual)
+' ======================
+
+class Institution {
+  id (UUID, PK)
+  name (text, obrigatório)
+  created_at (timestamptz)
+  updated_at (timestamptz)
+  deleted_at (timestamptz)
+}
+
+class Program {
+  id (UUID, PK)
+  institution_id (UUID, FK -> Institution.id, obrigatório)
+  name (text, obrigatório)
+  created_at (timestamptz)
+  updated_at (timestamptz)
+  deleted_at (timestamptz)
+}
+
+class Offer {
+  id (UUID, PK)
+  institution_id (UUID, FK -> Institution.id, obrigatório)
+  program_id (UUID, FK -> Program.id, opcional)
+  type (enum: course | scholarship | internship)
+  status (enum: active | inactive | closed)
+  publication_date (timestamptz, obrigatório)
+  application_deadline (timestamptz, obrigatório)
+  created_at (timestamptz)
+  updated_at (timestamptz)
+  deleted_at (timestamptz)
+}
+
+class User {
+  id (UUID, PK)
+  email (citext/text, obrigatório, único)
+  password_hash (text, obrigatório)
+  created_at (timestamptz)
+  updated_at (timestamptz)
+  deleted_at (timestamptz)
+  deleted_by (UUID, FK -> User.id, opcional)
+  deletion_reason (text, opcional)
+}
+
+class Role {
+  id (UUID, PK)
+  name (text, único)  ' admin, user
+  created_at (timestamptz)
+}
+
+class UserRole {
+  user_id (UUID, FK -> User.id, PK)
+  role_id (UUID, FK -> Role.id, PK)
+  created_at (timestamptz)
+}
+
+class CandidateProfile {
+  id (UUID, PK)
+  user_id (UUID, FK -> User.id, obrigatório, único)
+  full_name (text, obrigatório)
+  date_of_birth (date, opcional*)  ' *não está no enunciado
+  cpf (text, opcional*)           ' *não está no enunciado
+  consent_given_at (timestamptz, opcional*)
+  terms_version (text, opcional*)
+  created_at (timestamptz)
+  updated_at (timestamptz)
+  deleted_at (timestamptz)
+}
+
+class Application {
+  id (UUID, PK)
+  candidate_profile_id (UUID, FK -> CandidateProfile.id, obrigatório)
+  offer_id (UUID, FK -> Offer.id, obrigatório)
+  status (enum - valores a definir)
+  created_at (timestamptz)
+  updated_at (timestamptz)
+  deleted_at (timestamptz)
+  ' UNIQUE(candidate_profile_id, offer_id)
+}
+
+' ======================
+' LGPD / Logging (opcional, mas recomendado pelo desafio)
+' ======================
+
+package "LGPD / Audit (optional)" {
+
+  class AuditEvent {
+    id (UUID, PK)
+    occurred_at (timestamptz, obrigatório)
+    actor_user_id (UUID, FK -> User.id, obrigatório)
+    action (text, obrigatório) ' ex: OFFER_CREATED, APPLICATION_STATUS_CHANGED
+    entity_type (text, obrigatório) ' offer | application | candidate_profile | ...
+    entity_id (UUID, obrigatório)
+    ip (inet, opcional)
+    user_agent (text, opcional)
+    request_id (text/uuid, opcional)
+    before (jsonb, opcional)
+    after (jsonb, opcional)
+  }
+
+  class DataAccessLog {
+    id (UUID, PK)
+    accessed_at (timestamptz, obrigatório)
+    actor_user_id (UUID, FK -> User.id, obrigatório)
+    data_subject_user_id (UUID, FK -> User.id, opcional) ' titular (quando aplicável)
+    action (text, obrigatório) ' READ
+    resource (text, obrigatório) ' candidate_profile | applications | ...
+    resource_id (UUID, opcional)
+    purpose (text, opcional) ' motivo do acesso (suporte, análise, etc.)
+    ip (inet, opcional)
+    user_agent (text, opcional)
+    request_id (text/uuid, opcional)
+  }
+}
+
+' ======================
+' Relacionamentos
+' ======================
+
+Institution "1" -right- "0..*" Program : owns
+Institution "1" -- "0..*" Offer : publishes
+Program "1" -- "0..*" Offer : groups
+
+User "1" -- "0..1" CandidateProfile : has
+User "1" -right- "0..*" UserRole
+Role "1" -- "0..*" UserRole
+
+CandidateProfile "1" -- "0..*" Application : applies
+Offer "1" -- "0..*" Application : receives
+
+' LGPD links (auditoria e acesso)
+User "1" -- "0..*" AuditEvent : performs
+User "1" -- "0..*" DataAccessLog : accesses
+User "0..1" -- "0..*" DataAccessLog : is_subject
+
+note bottom of Application
+  Unique: (candidate_profile_id, offer_id)
+end note
+
+note right of Offer
+  Constraint: application_deadline > publication_date
+end note
+
+note right of AuditEvent
+  Append-only: não atualizar/deletar registros.
+  Usar para rastrear mudanças em dados e status.
+end note
+
+note right of DataAccessLog
+  Usar para registrar leitura de dados pessoais,
+  especialmente quando actor != titular.
+end note
+
+@enduml
