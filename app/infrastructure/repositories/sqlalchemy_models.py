@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, String, Text
+from sqlalchemy import Column, DateTime, String, Text, CheckConstraint
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
@@ -15,6 +15,12 @@ Base = declarative_base()
 
 class OfferModel(Base):
     __tablename__ = "offers"
+    __table_args__ = (
+        CheckConstraint(
+            "application_deadline > publication_date",
+            name="ck_offer_deadline_after_publication",
+        ),
+    )
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
     institution_id = Column(PG_UUID(as_uuid=True), nullable=False, index=True)
