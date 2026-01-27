@@ -1,0 +1,11 @@
+# Dependências de produção
+-r requirements.txt
+
+# Dependências de desenvolvimento
+pytest
+httpx
+pytest-asyncio
+mypy
+black
+isort
+alembic

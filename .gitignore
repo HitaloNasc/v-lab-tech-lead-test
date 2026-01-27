@@ -1,1 +1,79 @@
+# =========================
+# OS / Editor
+# =========================
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+
+.vscode/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Packaging / build
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# =========================
+# Tests / Coverage / Lint
+# =========================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# =========================
+# FastAPI / Uvicorn
+# =========================
+*.log
+uvicorn.log
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Database / Migrations
+# =========================
+alembic/versions/*.pyc
+
+# =========================
+# IDEs
+# =========================
+.idea/
+*.iml
+
+# =========================
+# Misc
+# =========================
+.cache/
