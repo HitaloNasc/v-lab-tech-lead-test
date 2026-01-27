@@ -113,3 +113,9 @@ LGPD / Audit (opcional na implementação inicial, recomendado no design):
   </a>
 
 </div>
+
+---
+
+| **Próximo** |
+|---------------|
+| [Design Arquitetural](./2_design.md) |
