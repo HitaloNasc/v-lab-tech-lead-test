@@ -96,3 +96,30 @@ class InstitutionRead(BaseModel):
     @classmethod
     def from_domain(cls, institution):
         return cls(**institution.__dict__)
+
+
+class ProgramCreate(BaseModel):
+    institution_id: UUID
+    name: str
+    description: Optional[str]
+
+
+class ProgramUpdate(BaseModel):
+    name: Optional[str]
+    description: Optional[str]
+
+
+class ProgramRead(BaseModel):
+    id: UUID
+    institution_id: UUID
+    name: str
+    description: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: Optional[datetime]
+    deleted_by: Optional[UUID]
+    deletion_reason: Optional[str]
+
+    @classmethod
+    def from_domain(cls, program):
+        return cls(**program.__dict__)

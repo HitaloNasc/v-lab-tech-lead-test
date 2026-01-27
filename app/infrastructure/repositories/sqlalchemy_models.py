@@ -8,6 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from app.domain.institution import Institution
 from app.domain.offer import Offer, OfferStatus, OfferType
+from app.domain.program import Program
 
 Base = declarative_base()
 
@@ -129,4 +130,57 @@ class InstitutionModel(Base):
     def update_from_domain(self, institution: "Institution"):
         self.name = institution.name
         self.description = institution.description
+        self.updated_at = datetime.utcnow()
+
+
+class ProgramModel(Base):
+    __tablename__ = "programs"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    institution_id = Column(PG_UUID(as_uuid=True), nullable=False, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by = Column(PG_UUID(as_uuid=True), nullable=True)
+    deletion_reason = Column(String(255), nullable=True)
+
+    def to_domain(self) -> Program:
+        return Program(
+            id=self.id,
+            institution_id=self.institution_id,
+            name=self.name,
+            description=self.description,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+            deleted_at=self.deleted_at,
+            deleted_by=self.deleted_by,
+            deletion_reason=self.deletion_reason,
+        )
+
+    @classmethod
+    def from_domain(cls, program: Program) -> "ProgramModel":
+        return cls(
+            id=program.id,
+            institution_id=program.institution_id,
+            name=program.name,
+            description=program.description,
+            created_at=program.created_at,
+            updated_at=program.updated_at,
+            deleted_at=program.deleted_at,
+            deleted_by=program.deleted_by,
+            deletion_reason=program.deletion_reason,
+        )
+
+    def update_from_domain(self, program: Program):
+        self.name = program.name
+        self.description = program.description
         self.updated_at = datetime.utcnow()
