@@ -3,6 +3,7 @@ from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
 from app.domain.offer import OfferType, OfferStatus, Offer
+from app.domain.user import Role
 
 
 class OfferCreate(BaseModel):
@@ -44,6 +45,48 @@ class OfferRead(BaseModel):
     @classmethod
     def from_domain(cls, offer: Offer):
         return cls(**offer.__dict__)
+
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    full_name: Optional[str]
+    role: Optional[Role]
+
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str]
+    password: Optional[str]
+    role: Optional[Role]
+    is_active: Optional[bool]
+
+
+class UserRead(BaseModel):
+    id: UUID
+    email: str
+    full_name: Optional[str]
+    role: Role
+    is_active: bool
+    last_login: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+    @classmethod
+    def from_domain(cls, user):
+        data = user.__dict__.copy()
+        # never expose hashed_password
+        data.pop("hashed_password", None)
+        return cls(**data)
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 
 class ErrorDetail(BaseModel):
