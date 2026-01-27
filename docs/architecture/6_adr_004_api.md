@@ -99,3 +99,37 @@ Adotar **API RESTful**, com recursos bem definidos e **versionamento via URL** (
 ## Conclusão
 
 Uma **API REST versionada** oferece o melhor equilíbrio entre **simplicidade**, **manutenibilidade**, **compatibilidade** e **evolução controlada**, atendendo plenamente às necessidades do desafio e ao perfil de um time pequeno responsável por um sistema em crescimento.
+
+---
+
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
+
+  <!-- Anterior -->
+  <a href="./5_adr_003_auth.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-003: Autenticação e Autorização
+  </a>
+
+  <!-- Próximo -->
+  <a href="./7_adr_005_versioning.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-005: Estratégia de Versionamento
+  </a>
+
+</div>

@@ -95,3 +95,37 @@ Adotar **JWT (JSON Web Token)** para autenticação **stateless** e **RBAC (Role
 ## Conclusão
 
 A combinação **JWT + RBAC** oferece o melhor equilíbrio entre **segurança**, **simplicidade**, **escalabilidade** e **aderência ao escopo** do desafio, atendendo aos requisitos funcionais e não funcionais (LGPD, performance e manutenibilidade) com menor risco e maior previsibilidade de evolução.
+
+---
+
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
+
+  <!-- Anterior -->
+  <a href="./4_adr_002_database.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-002: Escolha do Banco de Dados
+  </a>
+
+  <!-- Próximo -->
+  <a href="./6_adr_004_api.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-004: Padrão de API
+  </a>
+
+</div>

@@ -83,3 +83,37 @@ Adotar **PostgreSQL** como banco de dados relacional principal, utilizando um OR
 ## Conclusão
 
 PostgreSQL equilibra **consistência**, **auditabilidade**, **performance** e **maturidade**, atendendo aos requisitos funcionais e não funcionais do desafio, especialmente **LGPD logging** e **regras transacionais**, com menor risco e maior previsibilidade para a evolução do sistema.
+
+---
+
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
+
+  <!-- Anterior -->
+  <a href="./3_adr_001_layers.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-001: Separação de Camadas
+  </a>
+
+  <!-- Próximo -->
+  <a href="./5_adr_003_auth.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-003: Autenticação e Autorização
+  </a>
+
+</div>

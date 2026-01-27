@@ -254,3 +254,35 @@ Justificativa:
 | ADR-006 | [8_adr_006_lgpd.md](./8_adr_006_lgpd.md) | LGPD Logging e Auditoria | Definir estratégia de auditoria e rastreabilidade de alterações e acessos a dados pessoais para conformidade com LGPD. |
 | ADR-007 | [9_adr_007_delete_strategy.md](./9_adr_007_delete_strategy.md) | Estratégia de Exclusão de Dados | Definir o uso de soft delete como padrão para preservar histórico, integridade e accountability, com hard delete restrito a casos controlados. |
 
+---
+
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
+
+  <!-- Anterior -->
+  <a href="./1_requirements_capture.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+     ">
+     Captura de Requisitos
+  </a>
+
+  <!-- Próximo -->
+  <a href="./3_adr_001_layers.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-001: Separação de Camadas
+  </a>
+
+</div>

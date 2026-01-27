@@ -78,3 +78,36 @@ A **Application Layer** será implementada entre a camada de API (Presentation) 
 ## Referências
 
 - Desafio técnico V-LAB — seção de “Arquitetura de Camadas” e “ADRs” (modelo ADR-001).
+
+---
+
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
+
+  <!-- Anterior -->
+  <a href="./2_design.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+     ">
+     Design Arquitetural
+  </a>
+
+  <!-- Próximo -->
+  <a href="./4_adr_002_database.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-002: Escolha do Banco de Dados
+  </a>
+
+</div>

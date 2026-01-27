@@ -95,3 +95,37 @@ Cada versão principal (`v1`, `v2`, ...) representará um **contrato estável** 
 ## Conclusão
 
 O **versionamento por URL (`/api/v1`)** oferece o melhor equilíbrio entre **clareza**, **simplicidade**, **segurança evolutiva** e **baixo custo operacional**, sendo a estratégia mais adequada ao contexto do desafio e às necessidades de longo prazo da plataforma.
+
+---
+
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
+
+  <!-- Anterior -->
+  <a href="./6_adr_004_api.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-004: Padrão de API
+  </a>
+
+  <!-- Próximo -->
+  <a href="./8_adr_006_lgpd.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-006: LGPD Logging e Auditoria
+  </a>
+
+</div>

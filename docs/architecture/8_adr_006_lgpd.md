@@ -111,3 +111,37 @@ Ambas as tabelas serão **append-only**, com política de retenção definida, e
 ## Conclusão
 
 A adoção explícita de **AuditEvent** e **DataAccessLog** fornece uma solução equilibrada para **LGPD logging**, atendendo requisitos legais, técnicos e operacionais. Essa estratégia garante **rastreabilidade**, **accountability** e **governança**, sem comprometer a manutenibilidade ou a evolução da arquitetura.
+
+---
+
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
+
+  <!-- Anterior -->
+  <a href="./7_adr_005_versioning.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-005: Estratégia de Versionamento
+  </a>
+
+  <!-- Próximo -->
+  <a href="./9_adr_007_delete_strategy.md"
+     style="
+       flex: 1;
+       padding: 12px 16px;
+       border: 1px solid #d0d7de;
+       border-radius: 6px;
+       text-decoration: none;
+       color: inherit;
+       text-align: right;
+     ">
+    ADR-007: Estratégia de Exclusão de Dados
+  </a>
+
+</div>
