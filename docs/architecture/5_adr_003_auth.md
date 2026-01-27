@@ -98,34 +98,6 @@ A combinação **JWT + RBAC** oferece o melhor equilíbrio entre **segurança**,
 
 ---
 
-<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
-
-  <!-- Anterior -->
-  <a href="./4_adr_002_database.md"
-     style="
-       flex: 1;
-       padding: 12px 16px;
-       border: 1px solid #d0d7de;
-       border-radius: 6px;
-       text-decoration: none;
-       color: inherit;
-       text-align: right;
-     ">
-    ADR-002: Escolha do Banco de Dados
-  </a>
-
-  <!-- Próximo -->
-  <a href="./6_adr_004_api.md"
-     style="
-       flex: 1;
-       padding: 12px 16px;
-       border: 1px solid #d0d7de;
-       border-radius: 6px;
-       text-decoration: none;
-       color: inherit;
-       text-align: right;
-     ">
-    ADR-004: Padrão de API
-  </a>
-
-</div>
+| **Anterior** | **Próximo** |
+|---|---|
+| [ADR-002: Escolha do Banco de Dados](./4_adr_002_database.md) | [ADR-004: Padrão de API](./6_adr_004_api.md) |

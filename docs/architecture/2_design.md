@@ -256,40 +256,6 @@ Justificativa:
 
 ---
 
-<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 24px;">
-
-  <!-- Anterior -->
-  <a href="./1_requirements_capture.md"
-     style="
-       flex: 1;
-       padding: 12px 16px;
-       border: 1px solid #d0d7de;
-       border-radius: 6px;
-       text-decoration: none;
-       color: inherit;
-     ">
-     Captura de Requisitos
-  </a>
-
-  <!-- Próximo -->
-  <a href="./3_adr_001_layers.md"
-     style="
-       flex: 1;
-       padding: 12px 16px;
-       border: 1px solid #d0d7de;
-       border-radius: 6px;
-       text-decoration: none;
-       color: inherit;
-       text-align: right;
-     ">
-    ADR-001: Separação de Camadas
-  </a>
-
-</div>
-
-
----
-
 | **Anterior** | **Próximo** |
 |-----------------|---------------|
 | [Captura de Requisitos](./1_requirements_capture.md) | [ADR-001: Separação de Camadas](./3_adr_001_layers.md) |
