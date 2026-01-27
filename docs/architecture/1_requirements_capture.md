@@ -84,7 +84,7 @@ LGPD / Audit (opcional na implementação inicial, recomendado no design):
 - **[DataAccessLog]**: Registro de auditoria de acesso/leitura a dados (principalmente pessoais). Captura quem acessou (`actor_user_id`), quando (`accessed_at`), de quem são os dados (`data_subject_user_id`, quando aplicável), qual recurso foi consultado (`resource`/`resource_id`), finalidade (`purpose`) e contexto técnico (IP, user agent, request id). Ideal para rastrear acessos administrativos e suportar accountability LGPD.
 
 ### 4.2 Atributos por entidade
-![alt text](concept-data-model.png)
+![alt text](./diagrams/concept_data_model.png)
 
 ---
 
