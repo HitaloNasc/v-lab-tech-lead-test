@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, constr
 
 from app.domain.offer import Offer, OfferStatus, OfferType
 from app.domain.role import Role as RoleDomain
@@ -62,7 +62,7 @@ class OfferRead(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8, max_length=256)  # never store raw password
+    password: str = Field(min_length=8, max_length=72)  # never store raw password
     roles: Optional[List[str]] = None
     institution_id: Optional[UUID] = (
         None  # required when role includes 'admin' (business rule)
@@ -258,6 +258,22 @@ class CandidateProfileCreate(BaseModel):
     cpf: Optional[str] = Field(
         default=None, max_length=14
     )  # do not validate format here unless required
+
+
+class CandidateProfileForRegistration(BaseModel):
+    full_name: str = Field(min_length=1, max_length=200)
+    date_of_birth: Optional[date] = None
+    cpf: Optional[
+        constr(max_length=14, pattern=r"^\d{3}\.??\d{3}\.??\d{3}-?\d{2}$")
+    ] = None
+
+
+class RegistrationRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=256)
+    roles: List[str]
+    institution_id: Optional[UUID] = None
+    candidate_profile: Optional[CandidateProfileForRegistration] = None
 
 
 class CandidateProfileUpdate(BaseModel):

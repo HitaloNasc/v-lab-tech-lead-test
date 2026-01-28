@@ -1,16 +1,15 @@
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from app.domain.user import User
-from app.domain.role import Role
-from app.domain.user_repository import UserRepository
+from app.domain.errors import NotFoundError, ValidationError
 from app.domain.institution_repository import InstitutionRepository
-from app.domain.errors import ValidationError, NotFoundError
+from app.domain.role import Role
+from app.domain.user import User
+from app.domain.user_repository import UserRepository
 from app.infrastructure.security import (
+    create_access_token,
     hash_password,
     verify_password,
-    create_access_token,
 )
 
 
@@ -23,23 +22,25 @@ class CreateUser:
         self,
         email: str,
         password: str,
-        full_name: Optional[str] = None,
-        roles: Optional[list] = None,
+        roles: Optional[list[Role]] = None,
         institution_id: Optional[UUID] = None,
     ) -> User:
+        # validate password strength before hashing
+        pw_issues = self._password_issues(password)
+        if pw_issues:
+            raise ValidationError(
+                message="weak password",
+                details=pw_issues,
+            )
+
         # hash password
         hashed = hash_password(password)
-        # accept optional roles list (list of role names or Role domain objects)
-        roles_objs = None
-        if roles:
-            roles_objs = [r if hasattr(r, "name") else Role(name=r) for r in roles]
+
         # validation rules: admin requires institution_id; candidate must have no institution
         role_names = (
-            [getattr(r, "name", str(r)).lower() for r in roles_objs]
-            if roles_objs
-            else []
+            [getattr(r, "name", str(r)).lower() for r in roles] if roles else []
         )
-        if "admin" in role_names and not institution_id:
+        if "institution_admin" in role_names and not institution_id:
             raise ValidationError(
                 message="admin users must have institution_id",
                 details=[
@@ -69,11 +70,25 @@ class CreateUser:
         user = User(
             email=email,
             hashed_password=hashed,
-            full_name=full_name,
-            roles=roles_objs,
+            roles=roles,
             institution_id=institution_id,
         )
         return await self.repo.create(user)
+
+    def _password_issues(self, pw: str) -> list:
+        issues = []
+        if not pw or len(pw) < 8:
+            issues.append({"field": "password", "reason": "too_short"})
+        if not any(c.islower() for c in pw):
+            issues.append({"field": "password", "reason": "no_lowercase"})
+        if not any(c.isupper() for c in pw):
+            issues.append({"field": "password", "reason": "no_uppercase"})
+        if not any(c.isdigit() for c in pw):
+            issues.append({"field": "password", "reason": "no_digit"})
+        special = set("!@#$%^&*()-_=+[]{}|;:'\",.<>/?`~")
+        if not any(c in special for c in pw):
+            issues.append({"field": "password", "reason": "no_special_char"})
+        return issues
 
 
 class AuthenticateUser:
@@ -92,11 +107,7 @@ class AuthenticateUser:
                 message="Invalid credentials",
                 details=[{"field": "password", "reason": "invalid"}],
             )
-        if not user.is_active:
-            raise ValidationError(
-                message="User inactive",
-                details=[{"field": "user", "reason": "inactive"}],
-            )
+
         # include roles as array claim for downstream consumers
         roles_claim = []
         if hasattr(user, "roles") and user.roles:

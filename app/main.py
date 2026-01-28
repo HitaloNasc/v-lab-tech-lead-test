@@ -22,6 +22,21 @@ settings = get_settings()
 app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
 register_exception_handlers(app)
 app.add_middleware(RequestIdMiddleware)
+
+# ----------------------------------
+# Routers
+# ----------------------------------
+
+app.include_router(
+    auth_router,
+    responses={
+        422: {"model": ErrorEnvelope},
+        409: {"model": ErrorEnvelope},
+        403: {"model": ErrorEnvelope},
+        500: {"model": ErrorEnvelope},
+    },
+)
+
 app.include_router(
     offer_router,
     responses={
@@ -64,16 +79,6 @@ app.include_router(
 
 app.include_router(
     candidate_profile_router,
-    responses={
-        422: {"model": ErrorEnvelope},
-        409: {"model": ErrorEnvelope},
-        403: {"model": ErrorEnvelope},
-        500: {"model": ErrorEnvelope},
-    },
-)
-
-app.include_router(
-    auth_router,
     responses={
         422: {"model": ErrorEnvelope},
         409: {"model": ErrorEnvelope},

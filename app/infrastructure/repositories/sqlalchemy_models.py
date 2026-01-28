@@ -5,6 +5,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     DateTime,
+    Date,
     ForeignKey,
     String,
     Text,
@@ -14,6 +15,7 @@ from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.associationproxy import association_proxy
 
 from app.domain.institution import Institution
 from app.domain.offer import Offer, OfferStatus, OfferType
@@ -66,8 +68,10 @@ class OfferModel(Base):
     deleted_by = Column(PG_UUID(as_uuid=True), nullable=True)
     deletion_reason = Column(String(255), nullable=True)
 
-    # many-to-many relationship to roles via association table
-    roles = relationship("RoleModel", secondary="user_roles", backref="users")
+    # Note: roles are associated to users via the `user_roles` association table.
+    # Offers do not have a direct many-to-many to roles; the relationship
+    # belonged on UserModel. Removed incorrect mapping here to avoid
+    # NoForeignKeysError.
 
     def to_domain(self) -> Offer:
         return Offer(
@@ -266,13 +270,31 @@ class RoleModel(Base):
             id=role.id,
             name=role.name,
             description=getattr(role, "description", None),
-            created_at=role.created_at if hasattr(role, "created_at") else None,
+            created_at=(
+                role.created_at
+                if (
+                    hasattr(role, "created_at")
+                    and getattr(role, "created_at") is not None
+                )
+                else datetime.utcnow()
+            ),
         )
 
     def update_from_domain(self, role: Role):
         self.name = role.name
         self.description = getattr(role, "description", self.description)
         self.updated_at = datetime.utcnow()
+
+    # association object side: collection of UserRoleModel
+    user_roles = relationship(
+        "UserRoleModel",
+        back_populates="role",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    # convenience proxy to access users via association object
+    users = association_proxy("user_roles", "user")
 
 
 class UserRoleModel(Base):
@@ -292,9 +314,9 @@ class UserRoleModel(Base):
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
 
-    # relationships (optional convenience)
-    role = relationship("RoleModel")
-    # user relationship is optional here to avoid circular import issues
+    # relationships (explicit association object)
+    user = relationship("UserModel", back_populates="user_roles")
+    role = relationship("RoleModel", back_populates="user_roles")
 
 
 class UserModel(Base):
@@ -374,6 +396,18 @@ class UserModel(Base):
         self.updated_at = datetime.utcnow()
 
     # optional convenience relationship to InstitutionModel
+    # explicit association object from User -> UserRoleModel
+    user_roles = relationship(
+        "UserRoleModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    # convenience proxy to access RoleModel objects via the association
+    roles = association_proxy("user_roles", "role")
+
+    # optional convenience relationship to InstitutionModel
     institution = relationship("InstitutionModel")
 
 
@@ -389,7 +423,7 @@ class CandidateProfileModel(Base):
         index=True,
     )
     full_name = Column(String(255), nullable=False)
-    date_of_birth = Column(String(20), nullable=True)
+    date_of_birth = Column(Date, nullable=True)
     cpf = Column(String(64), nullable=True, index=True)
     created_at = Column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
