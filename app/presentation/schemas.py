@@ -194,3 +194,33 @@ class ProgramRead(BaseModel):
     @classmethod
     def from_domain(cls, program):
         return cls(**program.__dict__)
+
+
+class CandidateProfileCreate(BaseModel):
+    user_id: UUID
+    full_name: str
+    date_of_birth: Optional[str]
+    cpf: Optional[str]
+
+
+class CandidateProfileUpdate(BaseModel):
+    full_name: Optional[str]
+    date_of_birth: Optional[str]
+    cpf: Optional[str]
+
+
+class CandidateProfileRead(BaseModel):
+    id: UUID
+    user_id: UUID
+    full_name: str
+    date_of_birth: Optional[str]
+    cpf: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: Optional[datetime]
+    deleted_by: Optional[UUID]
+    deletion_reason: Optional[str]
+
+    @classmethod
+    def from_domain(cls, profile):
+        return cls(**profile.__dict__)

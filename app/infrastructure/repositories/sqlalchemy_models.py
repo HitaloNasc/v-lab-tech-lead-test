@@ -356,3 +356,68 @@ class UserModel(Base):
         # roles are managed via the `user_roles` association and repository logic
         self.is_active = user.is_active
         self.updated_at = datetime.utcnow()
+
+
+class CandidateProfileModel(Base):
+    __tablename__ = "candidate_profiles"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    full_name = Column(String(255), nullable=False)
+    date_of_birth = Column(String(20), nullable=True)
+    cpf = Column(String(64), nullable=True, index=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by = Column(PG_UUID(as_uuid=True), nullable=True)
+    deletion_reason = Column(String(255), nullable=True)
+
+    # relationship to user (optional convenience)
+    user = relationship("UserModel")
+
+    def to_domain(self) -> "CandidateProfile":
+        from app.domain.candidate_profile import CandidateProfile
+
+        return CandidateProfile(
+            id=self.id,
+            user_id=self.user_id,
+            full_name=self.full_name,
+            date_of_birth=self.date_of_birth,
+            cpf=self.cpf,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+            deleted_at=self.deleted_at,
+            deleted_by=self.deleted_by,
+            deletion_reason=self.deletion_reason,
+        )
+
+    @classmethod
+    def from_domain(cls, profile: "CandidateProfile") -> "CandidateProfileModel":
+        return cls(
+            id=profile.id,
+            user_id=profile.user_id,
+            full_name=profile.full_name,
+            date_of_birth=profile.date_of_birth,
+            cpf=profile.cpf,
+            created_at=profile.created_at,
+            updated_at=profile.updated_at,
+            deleted_at=profile.deleted_at,
+            deleted_by=profile.deleted_by,
+            deletion_reason=profile.deletion_reason,
+        )
+
+    def update_from_domain(self, profile: "CandidateProfile"):
+        self.full_name = profile.full_name
+        self.date_of_birth = profile.date_of_birth
+        self.cpf = profile.cpf
+        self.updated_at = datetime.utcnow()

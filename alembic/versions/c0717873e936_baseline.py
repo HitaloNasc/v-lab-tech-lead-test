@@ -1,8 +1,8 @@
 """baseline
 
-Revision ID: a72cc78e7d59
+Revision ID: c0717873e936
 Revises: 
-Create Date: 2026-01-27 19:25:25.300361
+Create Date: 2026-01-27 22:04:06.315722
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a72cc78e7d59'
+revision: str = 'c0717873e936'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -59,6 +59,22 @@ def upgrade() -> None:
     sa.UniqueConstraint('email', name='uq_users_email')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=False)
+    op.create_table('candidate_profiles',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('full_name', sa.String(length=255), nullable=False),
+    sa.Column('date_of_birth', sa.String(length=20), nullable=True),
+    sa.Column('cpf', sa.String(length=64), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('deleted_by', sa.UUID(), nullable=True),
+    sa.Column('deletion_reason', sa.String(length=255), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='RESTRICT'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_candidate_profiles_cpf'), 'candidate_profiles', ['cpf'], unique=False)
+    op.create_index(op.f('ix_candidate_profiles_user_id'), 'candidate_profiles', ['user_id'], unique=True)
     op.create_table('programs',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('institution_id', sa.UUID(), nullable=False),
@@ -121,6 +137,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_programs_name'), table_name='programs')
     op.drop_index(op.f('ix_programs_institution_id'), table_name='programs')
     op.drop_table('programs')
+    op.drop_index(op.f('ix_candidate_profiles_user_id'), table_name='candidate_profiles')
+    op.drop_index(op.f('ix_candidate_profiles_cpf'), table_name='candidate_profiles')
+    op.drop_table('candidate_profiles')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
     op.drop_index(op.f('ix_roles_name'), table_name='roles')

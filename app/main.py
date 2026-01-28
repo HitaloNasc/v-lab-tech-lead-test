@@ -14,6 +14,7 @@ from app.presentation.program_router import router as program_router
 from app.presentation.schemas import ErrorEnvelope
 from app.presentation.user_router import router as user_router
 from app.presentation.auth_router import router as auth_router
+from app.presentation.candidate_profile_router import router as candidate_profile_router
 
 settings = get_settings()
 
@@ -52,6 +53,16 @@ app.include_router(
 
 app.include_router(
     user_router,
+    responses={
+        422: {"model": ErrorEnvelope},
+        409: {"model": ErrorEnvelope},
+        403: {"model": ErrorEnvelope},
+        500: {"model": ErrorEnvelope},
+    },
+)
+
+app.include_router(
+    candidate_profile_router,
     responses={
         422: {"model": ErrorEnvelope},
         409: {"model": ErrorEnvelope},
