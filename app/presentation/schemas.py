@@ -1,29 +1,37 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from __future__ import annotations
+
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime
-from app.domain.offer import OfferType, OfferStatus, Offer
+
+from pydantic import BaseModel, EmailStr, Field
+
+from app.domain.offer import Offer, OfferStatus, OfferType
 from app.domain.role import Role as RoleDomain
+
+# -----------------------------
+# Offers
+# -----------------------------
 
 
 class OfferCreate(BaseModel):
     institution_id: UUID
-    program_id: Optional[UUID]
-    title: str
-    description: Optional[str]
+    program_id: Optional[UUID] = None
+    title: str = Field(min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=5000)
     type: OfferType
     publication_date: datetime
     application_deadline: datetime
 
 
 class OfferUpdate(BaseModel):
-    title: Optional[str]
-    description: Optional[str]
-    type: Optional[OfferType]
-    status: Optional[OfferStatus]
-    publication_date: Optional[datetime]
-    application_deadline: Optional[datetime]
-    program_id: Optional[UUID]
+    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=5000)
+    type: Optional[OfferType] = None
+    status: Optional[OfferStatus] = None
+    publication_date: Optional[datetime] = None
+    application_deadline: Optional[datetime] = None
+    program_id: Optional[UUID] = None
 
 
 class OfferRead(BaseModel):
@@ -47,53 +55,66 @@ class OfferRead(BaseModel):
         return cls(**offer.__dict__)
 
 
+# -----------------------------
+# Users & Roles
+# -----------------------------
+
+
 class UserCreate(BaseModel):
-    email: str
-    password: str
-    full_name: Optional[str]
-    roles: Optional[List[str]]
-    institution_id: Optional[UUID]
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=256)  # never store raw password
+    roles: Optional[List[str]] = None
+    institution_id: Optional[UUID] = (
+        None  # required when role includes 'admin' (business rule)
+    )
 
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str]
-    password: Optional[str]
-    roles: Optional[List[str]]
-    is_active: Optional[bool]
-    institution_id: Optional[UUID]
+    password: Optional[str] = Field(default=None, min_length=8, max_length=256)
+    roles: Optional[List[str]] = None
+    institution_id: Optional[UUID] = (
+        None  # required when role includes 'admin' (business rule)
+    )
 
 
 class UserRead(BaseModel):
     id: UUID
-    email: str
-    full_name: Optional[str]
-    roles: List[dict]
-    is_active: bool
-    last_login: Optional[datetime]
+    email: EmailStr
+    roles: List[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[UUID] = None
+    deletion_reason: Optional[str] = None
     institution_id: Optional[UUID]
 
     @classmethod
     def from_domain(cls, user):
         data = user.__dict__.copy()
-        # never expose hashed_password
+        # LGPD/Security: never expose hashed_password
         data.pop("hashed_password", None)
-        # convert role domain objects to serializable dicts
-        roles = []
-        if hasattr(user, "roles") and user.roles:
+
+        roles: List[Dict[str, Any]] = []
+        if getattr(user, "roles", None):
             for r in user.roles:
                 try:
-                    roles.append({"id": r.id, "name": r.name})
+                    roles.append(
+                        {
+                            "id": r.id,
+                            "name": r.name,
+                            "description": getattr(r, "description", None),
+                        }
+                    )
                 except Exception:
                     continue
+
         data["roles"] = roles
         return cls(**data)
 
 
 class RoleCreate(BaseModel):
-    name: str
-    description: Optional[str]
+    name: str = Field(min_length=1, max_length=50)
+    description: Optional[str] = Field(default=None, max_length=300)
 
 
 class RoleRead(BaseModel):
@@ -101,20 +122,34 @@ class RoleRead(BaseModel):
     name: str
     description: Optional[str]
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
 
     @classmethod
     def from_domain(cls, role: RoleDomain):
-        return cls(id=role.id, name=role.name, description=getattr(role, "description", None), created_at=getattr(role, "created_at", datetime.utcnow()))
+        return cls(
+            id=role.id,
+            name=role.name,
+            description=getattr(role, "description", None),
+            created_at=getattr(role, "created_at", datetime.utcnow()),
+            updated_at=getattr(role, "updated_at", None),
+            deleted_at=getattr(role, "deleted_at", None),
+        )
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+# -----------------------------
+# Error envelope
+# -----------------------------
 
 
 class ErrorDetail(BaseModel):
@@ -139,7 +174,10 @@ class ErrorEnvelope(BaseModel):
                     "code": "VALIDATION_ERROR",
                     "message": "application_deadline must be after publication_date",
                     "details": [
-                        {"field": "application_deadline", "reason": "must be after publication_date"}
+                        {
+                            "field": "application_deadline",
+                            "reason": "must be after publication_date",
+                        }
                     ],
                     "request_id": "req_e353920d7e7c4557",
                 }
@@ -147,14 +185,19 @@ class ErrorEnvelope(BaseModel):
         }
 
 
+# -----------------------------
+# Institutions & Programs
+# -----------------------------
+
+
 class InstitutionCreate(BaseModel):
-    name: str
-    description: Optional[str]
+    name: str = Field(min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=1000)
 
 
 class InstitutionUpdate(BaseModel):
-    name: Optional[str]
-    description: Optional[str]
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=1000)
 
 
 class InstitutionRead(BaseModel):
@@ -174,13 +217,13 @@ class InstitutionRead(BaseModel):
 
 class ProgramCreate(BaseModel):
     institution_id: UUID
-    name: str
-    description: Optional[str]
+    name: str = Field(min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=1000)
 
 
 class ProgramUpdate(BaseModel):
-    name: Optional[str]
-    description: Optional[str]
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=1000)
 
 
 class ProgramRead(BaseModel):
@@ -199,24 +242,35 @@ class ProgramRead(BaseModel):
         return cls(**program.__dict__)
 
 
+# -----------------------------
+# Candidate profile (PII)
+# -----------------------------
+# LGPD note:
+# CandidateProfile contains personal data. Only expose it when authorized
+# (self or admin of same institution with active consent). This policy is enforced
+# in Application Layer; schemas just ensure we don't accidentally leak credentials.
+
+
 class CandidateProfileCreate(BaseModel):
     user_id: UUID
-    full_name: str
-    date_of_birth: Optional[str]
-    cpf: Optional[str]
+    full_name: str = Field(min_length=1, max_length=200)
+    date_of_birth: Optional[date] = None
+    cpf: Optional[str] = Field(
+        default=None, max_length=14
+    )  # do not validate format here unless required
 
 
 class CandidateProfileUpdate(BaseModel):
-    full_name: Optional[str]
-    date_of_birth: Optional[str]
-    cpf: Optional[str]
+    full_name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    date_of_birth: Optional[date] = None
+    cpf: Optional[str] = Field(default=None, max_length=14)
 
 
 class CandidateProfileRead(BaseModel):
     id: UUID
     user_id: UUID
     full_name: str
-    date_of_birth: Optional[str]
+    date_of_birth: Optional[date]
     cpf: Optional[str]
     created_at: datetime
     updated_at: datetime
@@ -229,13 +283,18 @@ class CandidateProfileRead(BaseModel):
         return cls(**profile.__dict__)
 
 
+# -----------------------------
+# Applications
+# -----------------------------
+
+
 class ApplicationCreate(BaseModel):
     candidate_profile_id: UUID
     offer_id: UUID
 
 
 class ApplicationUpdate(BaseModel):
-    status: Optional[str]
+    status: Optional[str] = None
 
 
 class ApplicationRead(BaseModel):

@@ -23,6 +23,7 @@ skinparam ranksep 80
 class Institution {
   id (UUID, PK)
   name (text, obrigatório)
+  description (text, opcional) ' adicionado para melhor detalhamento da instituição
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
@@ -34,6 +35,7 @@ class Program {
   id (UUID, PK)
   institution_id (UUID, FK -> Institution.id, obrigatório)
   name (text, obrigatório)
+  description (text, opcional) ' adicionado para melhor detalhamento do programa
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
