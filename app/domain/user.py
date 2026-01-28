@@ -11,10 +11,8 @@ class User:
         id: Optional[UUID] = None,
         email: str = None,
         hashed_password: str = None,
-        full_name: Optional[str] = None,
         roles: Optional[List[Role]] = None,
-        is_active: bool = True,
-        last_login: Optional[datetime] = None,
+        institution_id: Optional[UUID] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
         deleted_at: Optional[datetime] = None,
@@ -24,11 +22,10 @@ class User:
         self.id = id or uuid4()
         self.email = email
         self.hashed_password = hashed_password
-        self.full_name = full_name
         # many-to-many roles collection (list of Role domain objects)
         self.roles = roles or []
-        self.is_active = is_active
-        self.last_login = last_login
+        # optional association to an Institution
+        self.institution_id = institution_id
         self.created_at = created_at or datetime.utcnow()
         self.updated_at = updated_at or datetime.utcnow()
         self.deleted_at = deleted_at

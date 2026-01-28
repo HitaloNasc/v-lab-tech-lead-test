@@ -1,8 +1,8 @@
 """baseline
 
-Revision ID: df01014d9487
+Revision ID: b137341cacb9
 Revises: 
-Create Date: 2026-01-27 22:24:18.200490
+Create Date: 2026-01-27 23:50:51.765995
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'df01014d9487'
+revision: str = 'b137341cacb9'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -43,22 +43,37 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_roles_name'), 'roles', ['name'], unique=True)
-    op.create_table('users',
+    op.create_table('programs',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('hashed_password', sa.String(length=255), nullable=False),
-    sa.Column('full_name', sa.String(length=255), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('last_login', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('institution_id', sa.UUID(), nullable=False),
+    sa.Column('name', sa.String(length=255), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('deleted_by', sa.UUID(), nullable=True),
     sa.Column('deletion_reason', sa.String(length=255), nullable=True),
+    sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='RESTRICT'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_programs_institution_id'), 'programs', ['institution_id'], unique=False)
+    op.create_index(op.f('ix_programs_name'), 'programs', ['name'], unique=False)
+    op.create_table('users',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('hashed_password', sa.String(length=255), nullable=False),
+    sa.Column('institution_id', sa.UUID(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('deleted_by', sa.UUID(), nullable=True),
+    sa.Column('deletion_reason', sa.String(length=255), nullable=True),
+    sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email', name='uq_users_email')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=False)
+    op.create_index(op.f('ix_users_institution_id'), 'users', ['institution_id'], unique=False)
     op.create_table('candidate_profiles',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
@@ -75,29 +90,6 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_candidate_profiles_cpf'), 'candidate_profiles', ['cpf'], unique=False)
     op.create_index(op.f('ix_candidate_profiles_user_id'), 'candidate_profiles', ['user_id'], unique=True)
-    op.create_table('programs',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('institution_id', sa.UUID(), nullable=False),
-    sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('deleted_by', sa.UUID(), nullable=True),
-    sa.Column('deletion_reason', sa.String(length=255), nullable=True),
-    sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='RESTRICT'),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_programs_institution_id'), 'programs', ['institution_id'], unique=False)
-    op.create_index(op.f('ix_programs_name'), 'programs', ['name'], unique=False)
-    op.create_table('user_roles',
-    sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('role_id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('user_id', 'role_id')
-    )
     op.create_table('offers',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('institution_id', sa.UUID(), nullable=False),
@@ -122,6 +114,14 @@ def upgrade() -> None:
     op.create_index(op.f('ix_offers_program_id'), 'offers', ['program_id'], unique=False)
     op.create_index(op.f('ix_offers_status'), 'offers', ['status'], unique=False)
     op.create_index(op.f('ix_offers_type'), 'offers', ['type'], unique=False)
+    op.create_table('user_roles',
+    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('role_id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('user_id', 'role_id')
+    )
     op.create_table('applications',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('candidate_profile_id', sa.UUID(), nullable=False),
@@ -150,20 +150,21 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_applications_offer_id'), table_name='applications')
     op.drop_index(op.f('ix_applications_candidate_profile_id'), table_name='applications')
     op.drop_table('applications')
+    op.drop_table('user_roles')
     op.drop_index(op.f('ix_offers_type'), table_name='offers')
     op.drop_index(op.f('ix_offers_status'), table_name='offers')
     op.drop_index(op.f('ix_offers_program_id'), table_name='offers')
     op.drop_index(op.f('ix_offers_institution_id'), table_name='offers')
     op.drop_table('offers')
-    op.drop_table('user_roles')
-    op.drop_index(op.f('ix_programs_name'), table_name='programs')
-    op.drop_index(op.f('ix_programs_institution_id'), table_name='programs')
-    op.drop_table('programs')
     op.drop_index(op.f('ix_candidate_profiles_user_id'), table_name='candidate_profiles')
     op.drop_index(op.f('ix_candidate_profiles_cpf'), table_name='candidate_profiles')
     op.drop_table('candidate_profiles')
+    op.drop_index(op.f('ix_users_institution_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
+    op.drop_index(op.f('ix_programs_name'), table_name='programs')
+    op.drop_index(op.f('ix_programs_institution_id'), table_name='programs')
+    op.drop_table('programs')
     op.drop_index(op.f('ix_roles_name'), table_name='roles')
     op.drop_table('roles')
     op.drop_index(op.f('ix_institutions_name'), table_name='institutions')

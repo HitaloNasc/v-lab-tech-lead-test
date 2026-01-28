@@ -14,7 +14,7 @@ skinparam classBackgroundColor #FFFFFF
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 skinparam nodesep 80
-skinparam ranksep 60
+skinparam ranksep 80
 
 ' ======================
 ' Entidades (conceitual)
@@ -26,6 +26,8 @@ class Institution {
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
+  deleted_by (UUID, FK -> User.id, opcional)
+  deletion_reason (text, opcional)
 }
 
 class Program {
@@ -35,12 +37,16 @@ class Program {
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
+  deleted_by (UUID, FK -> User.id, opcional)
+  deletion_reason (text, opcional)
 }
 
 class Offer {
   id (UUID, PK)
   institution_id (UUID, FK -> Institution.id, obrigatório)
   program_id (UUID, FK -> Program.id, opcional)
+  title (text, obrigatório)  ' adicionado para melhor identificação da oferta
+  description (text, opcional) ' adicionado para melhor detalhamento da oferta
   type (enum: course | scholarship | internship)
   status (enum: active | inactive | closed)
   publication_date (timestamptz, obrigatório)
@@ -48,12 +54,15 @@ class Offer {
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
+  deleted_by (UUID, FK -> User.id, opcional)
+  deletion_reason (text, opcional)
 }
 
 class User {
   id (UUID, PK)
   email (citext/text, obrigatório, único)
-  password_hash (text, obrigatório)
+  hashed_password (text, obrigatório)
+  institution_id (UUID, FK -> Institution.id, opcional) ' obrigatório quando role=admin
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
@@ -63,8 +72,11 @@ class User {
 
 class Role {
   id (UUID, PK)
-  name (text, único)  ' admin, user
+  name (text, único)  ' admin, candidate
+  description (text, opcional) ' adicionado para melhor descrição da role
   created_at (timestamptz)
+  updated_at (timestamptz)
+  deleted_at (timestamptz)
 }
 
 class UserRole {
@@ -82,6 +94,8 @@ class CandidateProfile {
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
+  deleted_by (UUID, FK -> User.id, opcional)
+  deletion_reason (text, opcional)
 }
 
 class Application {
@@ -92,6 +106,8 @@ class Application {
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
+  deleted_by (UUID, FK -> User.id, opcional)
+  deletion_reason (text, opcional)
   ' UNIQUE(candidate_profile_id, offer_id)
 }
 
@@ -111,6 +127,7 @@ class Consent {
   user_agent (text, opcional)
   evidence_hash (text, opcional)
   created_at (timestamptz)
+  ' UNIQUE(application_id, scope, terms_version) recomendado
 }
 
 ' ======================
@@ -152,9 +169,13 @@ package "LGPD / Audit (optional)" {
 ' Relacionamentos
 ' ======================
 
-Institution "1" -right- "0..*" Program : owns
+Institution "1" -- "0..*" Program : owns
 Institution "1" -- "0..*" Offer : publishes
 Program "1" -- "0..*" Offer : groups
+
+' NOVO: vínculo opcional do usuário à instituição (admin institucional)
+Institution "1" -- "0..*" User : has_admins
+User "0..1" -- "1" Institution : belongs_to
 
 User "1" -- "0..1" CandidateProfile : has
 User "1" -right- "0..*" UserRole
@@ -165,10 +186,10 @@ Offer "1" -- "0..*" Application : receives
 
 ' Consent links
 User "1" -- "0..*" Consent : gives
-Application "1" -left- "0..*" Consent : requires
+Application "1" -down- "0..*" Consent : requires
 
 ' LGPD links (auditoria e acesso)
-User "1" -right- "0..*" AuditEvent : performs
+User "1" -- "0..*" AuditEvent : performs
 User "1" -- "0..*" DataAccessLog : accesses
 User "0..1" -- "0..*" DataAccessLog : is_subject
 
@@ -184,6 +205,12 @@ note right of Offer
   Constraint: application_deadline > publication_date
 end note
 
+note left of User
+  Regra: se User possuir role=admin,
+  institution_id deve estar preenchido.
+  Se role=candidate, institution_id deve ser nulo.
+end note
+
 note right of Consent
   Consentimento é contextual à candidatura.
   Pode haver múltiplos consentimentos por Application (escopos distintos).
@@ -192,6 +219,13 @@ end note
 
 note bottom of Consent
   Histórico: manter registro mesmo se revogar (revoked_at != null).
+end note
+
+note right of CandidateProfile
+  Leitura permitida:
+  - pelo próprio titular; ou
+  - por admin da mesma institution da Offer (via User.institution_id),
+    desde que exista Consent ativo para a Application.
 end note
 
 note right of AuditEvent

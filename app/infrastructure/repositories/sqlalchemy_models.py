@@ -2,7 +2,6 @@ from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import (
-    Boolean,
     CheckConstraint,
     Column,
     DateTime,
@@ -288,11 +287,14 @@ class UserModel(Base):
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
     email = Column(String(255), nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
-    full_name = Column(String(255), nullable=True)
+    institution_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("institutions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     # role column removed — roles are modeled via many-to-many `user_roles` association
     # association relationship defined below
-    is_active = Column(Boolean, nullable=False, default=True)
-    last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
@@ -321,10 +323,8 @@ class UserModel(Base):
             id=self.id,
             email=self.email,
             hashed_password=self.hashed_password,
-            full_name=self.full_name,
             roles=roles,
-            is_active=self.is_active,
-            last_login=self.last_login,
+            institution_id=getattr(self, "institution_id", None),
             created_at=self.created_at,
             updated_at=self.updated_at,
             deleted_at=self.deleted_at,
@@ -338,10 +338,8 @@ class UserModel(Base):
             id=user.id,
             email=user.email,
             hashed_password=user.hashed_password,
-            full_name=user.full_name,
+            institution_id=getattr(user, "institution_id", None),
             # roles are handled via association table; do not write here
-            is_active=user.is_active,
-            last_login=user.last_login,
             created_at=user.created_at,
             updated_at=user.updated_at,
             deleted_at=user.deleted_at,
@@ -351,13 +349,15 @@ class UserModel(Base):
 
     def update_from_domain(self, user: "User"):
         self.email = user.email
+        if hasattr(user, "institution_id"):
+            self.institution_id = user.institution_id
         if hasattr(user, "hashed_password") and user.hashed_password:
             self.hashed_password = user.hashed_password
-        self.full_name = user.full_name
         # roles are managed via the `user_roles` association and repository logic
-        self.is_active = user.is_active
         self.updated_at = datetime.utcnow()
 
+    # optional convenience relationship to InstitutionModel
+    institution = relationship("InstitutionModel")
 
 class CandidateProfileModel(Base):
     __tablename__ = "candidate_profiles"

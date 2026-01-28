@@ -52,6 +52,7 @@ class UserCreate(BaseModel):
     password: str
     full_name: Optional[str]
     roles: Optional[List[str]]
+    institution_id: Optional[UUID]
 
 
 class UserUpdate(BaseModel):
@@ -59,6 +60,7 @@ class UserUpdate(BaseModel):
     password: Optional[str]
     roles: Optional[List[str]]
     is_active: Optional[bool]
+    institution_id: Optional[UUID]
 
 
 class UserRead(BaseModel):
@@ -70,6 +72,7 @@ class UserRead(BaseModel):
     last_login: Optional[datetime]
     created_at: datetime
     updated_at: datetime
+    institution_id: Optional[UUID]
 
     @classmethod
     def from_domain(cls, user):

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status
 from typing import List
 from uuid import UUID
 from app.infrastructure.repositories.user_repository_sqlalchemy import UserRepositorySQLAlchemy
+from app.infrastructure.repositories.institution_repository_sqlalchemy import InstitutionRepositorySQLAlchemy
 from app.application.user_use_cases import CreateUser, GetUserById, UpdateUser, DeleteUser
 from app.infrastructure.db import get_db
 from app.presentation.schemas import UserCreate, UserRead, UserUpdate
@@ -14,10 +15,18 @@ def get_user_repo(db: AsyncSession = Depends(get_db)):
     return UserRepositorySQLAlchemy(lambda: db)
 
 
+def get_institution_repo(db: AsyncSession = Depends(get_db)):
+    return InstitutionRepositorySQLAlchemy(lambda: db)
+
+
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def create_user(user_in: UserCreate, repo: UserRepositorySQLAlchemy = Depends(get_user_repo)):
-    use_case = CreateUser(repo)
-    user = await use_case.execute(email=user_in.email, password=user_in.password, full_name=user_in.full_name, roles=user_in.roles)
+async def create_user(
+    user_in: UserCreate,
+    repo: UserRepositorySQLAlchemy = Depends(get_user_repo),
+    inst_repo: InstitutionRepositorySQLAlchemy = Depends(get_institution_repo),
+):
+    use_case = CreateUser(repo, inst_repo)
+    user = await use_case.execute(email=user_in.email, password=user_in.password, full_name=user_in.full_name, roles=user_in.roles, institution_id=user_in.institution_id)
     return UserRead.from_domain(user)
 
 
@@ -32,8 +41,13 @@ async def get_user(user_id: UUID, repo: UserRepositorySQLAlchemy = Depends(get_u
 
 
 @router.put("/{user_id}", response_model=UserRead)
-async def update_user(user_id: UUID, user_in: UserUpdate, repo: UserRepositorySQLAlchemy = Depends(get_user_repo)):
-    use_case = UpdateUser(repo)
+async def update_user(
+    user_id: UUID,
+    user_in: UserUpdate,
+    repo: UserRepositorySQLAlchemy = Depends(get_user_repo),
+    inst_repo: InstitutionRepositorySQLAlchemy = Depends(get_institution_repo),
+):
+    use_case = UpdateUser(repo, inst_repo)
     user = await repo.get_by_id(user_id)
     if not user:
         from app.domain.errors import NotFoundError
