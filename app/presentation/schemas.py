@@ -224,3 +224,28 @@ class CandidateProfileRead(BaseModel):
     @classmethod
     def from_domain(cls, profile):
         return cls(**profile.__dict__)
+
+
+class ApplicationCreate(BaseModel):
+    candidate_profile_id: UUID
+    offer_id: UUID
+
+
+class ApplicationUpdate(BaseModel):
+    status: Optional[str]
+
+
+class ApplicationRead(BaseModel):
+    id: UUID
+    candidate_profile_id: UUID
+    offer_id: UUID
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: Optional[datetime]
+    deleted_by: Optional[UUID]
+    deletion_reason: Optional[str]
+
+    @classmethod
+    def from_domain(cls, app):
+        return cls(**app.__dict__)

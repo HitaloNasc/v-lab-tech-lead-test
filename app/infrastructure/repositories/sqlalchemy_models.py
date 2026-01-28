@@ -21,6 +21,7 @@ from app.domain.offer import Offer, OfferStatus, OfferType
 from app.domain.program import Program
 from app.domain.user import User
 from app.domain.role import Role
+from app.domain.application import Application
 
 Base = declarative_base()
 
@@ -420,4 +421,63 @@ class CandidateProfileModel(Base):
         self.full_name = profile.full_name
         self.date_of_birth = profile.date_of_birth
         self.cpf = profile.cpf
+        self.updated_at = datetime.utcnow()
+
+
+class ApplicationModel(Base):
+    __tablename__ = "applications"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    candidate_profile_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("candidate_profiles.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    offer_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("offers.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    status = Column(String(50), nullable=False, default="submitted", index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by = Column(PG_UUID(as_uuid=True), nullable=True)
+    deletion_reason = Column(String(255), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("candidate_profile_id", "offer_id", name="uq_applications_candidate_offer"),
+    )
+
+    def to_domain(self) -> Application:
+        return Application(
+            id=self.id,
+            candidate_profile_id=self.candidate_profile_id,
+            offer_id=self.offer_id,
+            status=self.status,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+            deleted_at=self.deleted_at,
+            deleted_by=self.deleted_by,
+            deletion_reason=self.deletion_reason,
+        )
+
+    @classmethod
+    def from_domain(cls, application: Application) -> "ApplicationModel":
+        return cls(
+            id=application.id,
+            candidate_profile_id=application.candidate_profile_id,
+            offer_id=application.offer_id,
+            status=getattr(application, "status", "submitted"),
+            created_at=application.created_at,
+            updated_at=application.updated_at,
+            deleted_at=application.deleted_at,
+            deleted_by=application.deleted_by,
+            deletion_reason=application.deletion_reason,
+        )
+
+    def update_from_domain(self, application: Application):
+        self.status = application.status
         self.updated_at = datetime.utcnow()
