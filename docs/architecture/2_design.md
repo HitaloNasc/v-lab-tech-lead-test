@@ -170,37 +170,62 @@ Responsável por:
 ## 4. Contratos de API (v1)
 
 ### 4.1 Autenticação e segurança
+
 - POST `/api/v1/auth/register`
 - POST `/api/v1/auth/login`
-- Autorização via roles (UserRole)
-- Endpoints protegidos com `@require_auth`
-- Rate limiting simples: `max X req/min` por IP (configurável)
+- Roles podem ser `sys_admin`, `institution_admin` ou `candidate`
+- Usuários do tipo `candidate` precisam preencher seus dados pessoais para criação do `CandidateUser`
+- Usuários do tipo `institution_admin` precisam ter um `institution_id` válido atrelado a eles
+- Usuários do tipo `sys_admin` tem maior privilégio no sistema
+- Autorização via roles (`UserRole`)
+- Os tokens gerados serão usado para acessar endpoints protegidos com `@require_auth` e `@require_role`
+- Rate limiting simples: `max X req/min` por IP (configurável) [implementar antes de seguir para prod]
 
 > **Nota de modelagem:** usuários `admin` (institucionais) devem possuir `institution_id`.
 
 ### 4.2 Offers
-- POST `/api/v1/offers` (admin-only)
+- POST `/api/v1/offers` (institution_admin-only)
 - GET `/api/v1/offers?limit=20&offset=0`
 - GET `/api/v1/offers/{id}`
-- PUT `/api/v1/offers/{id}` (admin-only, mesma institution)
-- DELETE `/api/v1/offers/{id}` (admin-only, mesma institution)
+- PUT `/api/v1/offers/{id}` (institution_admin-only, mesma institution)
+- DELETE `/api/v1/offers/{id}` (institution_admin-only, mesma institution)
 - Filtros: `institution`, `type`, `status`
 
 **Regra adicional (consistência multi-instituição):**
 - Admin só pode criar/alterar offers cuja `institution_id == user.institution_id`.
 
 ### 4.3 Applications
-- POST `/api/v1/applications`
-- GET `/api/v1/users/{id}/applications` (self-only)
-- POST `/api/v1/applications/{id}/status` (admin-only, mesma institution da offer)
+- POST `/api/v1/applications` (candidate, precisa **consentimentir** compartilhamento de dados)
+- GET `/api/v1/offers/{id}/applications` (institution_admin-only, só visualiza dados dos candidatos que **consentimentiram**)
+- GET `/api/v1/users/{id}/applications` (candidate: self-only)
+- POST `/api/v1/applications/{id}/status` (institution_admin-only, mesma institution da offer)
 
 Validações obrigatórias no caso de uso:
-- Unicidade por (`candidate_profile_id`, `offer_id`)
+- Unicidade por (`candidate_profile_id`, `offer_id`) - usuários não podem aplicar mais de uma vez para uma mesma oferta
 - Deadline válido (não aplicar para oferta expirada)
 - Impedir aplicar em offer `closed`
 - Alteração de status somente por admin institucional da offer
+- Ler dados de usuários ou alterar status de aplicações deve gerar registros auditáveis (LGPD trail)
 
 > **Consentimento:** ao criar candidatura, deve existir registro de `Consent` (por escopo/versão) para o contexto da candidatura.
+
+### 4.4 CandidateUsers
+- PUT `/api/v1/users/{id}` (candidate: self-only)
+- DELETE `/api/v1/users/{id}` (candidate: self-only) - Direito a apagar dados LGPD
+
+### 4.5 Insitutions
+- POST `/api/v1/institutions` (sys_admin-only)
+- GET `/api/v1/institutions/`
+- GET `/api/v1/institutions/{institution_id}`
+- PUT `/api/v1/institutions/{institution_id}` (sys_admin-only)
+- DELETE `/api/v1/institutions/{institution_id}` (sys_admin-only)
+
+### 4.6 Programs
+- POST `/api/v1/programs` (institution_admin-only, institution_admin-only, mesma institution)
+- GET `/api/v1/programs/`
+- GET `/api/v1/programs/{program_id}`
+- PUT `/api/v1/programs/{program_id}` (institution_admin-only, institution_admin-only, mesma institution)
+- DELETE `/api/v1/programs/{program_id}` (institution_admin-only, institution_admin-only, mesma institution)
 
 ---
 
