@@ -79,8 +79,6 @@ class CandidateProfile {
   full_name (text, obrigatório)
   date_of_birth (date, opcional*)  ' *não está no enunciado
   cpf (text, opcional*)           ' *não está no enunciado
-  consent_given_at (timestamptz, opcional*)
-  terms_version (text, opcional*)
   created_at (timestamptz)
   updated_at (timestamptz)
   deleted_at (timestamptz)
@@ -95,6 +93,24 @@ class Application {
   updated_at (timestamptz)
   deleted_at (timestamptz)
   ' UNIQUE(candidate_profile_id, offer_id)
+}
+
+' ======================
+' Consentimento (por candidatura)
+' ======================
+
+class Consent {
+  id (UUID, PK)
+  user_id (UUID, FK -> User.id, obrigatório)
+  application_id (UUID, FK -> Application.id, obrigatório)
+  scope (text, obrigatório) ' APPLICATION_TERMS | DATA_SHARING | MARKETING | ...
+  terms_version (text, obrigatório)
+  consented_at (timestamptz, obrigatório)
+  revoked_at (timestamptz, opcional)
+  ip (inet, opcional)
+  user_agent (text, opcional)
+  evidence_hash (text, opcional)
+  created_at (timestamptz)
 }
 
 ' ======================
@@ -147,10 +163,18 @@ Role "1" -- "0..*" UserRole
 CandidateProfile "1" -- "0..*" Application : applies
 Offer "1" -- "0..*" Application : receives
 
+' Consent links
+User "1" -- "0..*" Consent : gives
+Application "1" -left- "0..*" Consent : requires
+
 ' LGPD links (auditoria e acesso)
-User "1" -- "0..*" AuditEvent : performs
+User "1" -right- "0..*" AuditEvent : performs
 User "1" -- "0..*" DataAccessLog : accesses
 User "0..1" -- "0..*" DataAccessLog : is_subject
+
+' ======================
+' Notas / Constraints
+' ======================
 
 note bottom of Application
   Unique: (candidate_profile_id, offer_id)
@@ -158,6 +182,16 @@ end note
 
 note right of Offer
   Constraint: application_deadline > publication_date
+end note
+
+note right of Consent
+  Consentimento é contextual à candidatura.
+  Pode haver múltiplos consentimentos por Application (escopos distintos).
+  Recomendado: UNIQUE(application_id, scope, terms_version).
+end note
+
+note bottom of Consent
+  Histórico: manter registro mesmo se revogar (revoked_at != null).
 end note
 
 note right of AuditEvent

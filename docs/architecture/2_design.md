@@ -33,23 +33,72 @@ Inclui:
 ## 2. Modelo Conceitual de Dados
 
 ### 2.1 Entidades principais (conceitual)
-- **Institution:** instituição/universidade proprietária das ofertas e programas.
-- **Program:** programas vinculados à Institution (detalhes não definidos no desafio).
-- **Offer:** oferta acadêmica (course/scholarship/internship) com status e janelas de candidatura.
-- **User:** identidade autenticável (email + senha hash), com soft delete.
-- **Role / UserRole:** RBAC via papéis e tabela de junção N:N.
-- **CandidateProfile:** dados pessoais do candidato (separado de User, privacy-by-design), com soft delete.
-- **Application:** candidatura do candidato para uma oferta, com status e constraints.
+- **[Institution]**: Representa a instituição/universidade proprietária das ofertas e programas. Centraliza o “dono” institucional do catálogo e pode servir como chave de particionamento lógico (multi-instituição).
 
-LGPD / Audit (recomendado no design):
-- **AuditEvent:** trilha append-only de alterações relevantes (mudanças em dados e estados críticos).
-- **DataAccessLog:** trilha de acesso/leitura a dados pessoais (accountability LGPD).
+- **[Program]**: Representa programas vinculados a uma `institution` (ex.: programa de pós, edital, trilha), permitindo organizar ofertas por contexto institucional.
 
-### 2.2 Regras e constraints no modelo
-- **Unicidade:** `Application` deve ser única por `(candidate_profile_id, offer_id)`.
-- **Datas:** `Offer.application_deadline > Offer.publication_date`.
-- **Prazo:** candidato não pode aplicar em oferta expirada (validação no caso de uso de criação de candidatura).
-- **Soft delete:** entidades de domínio principais mantêm histórico e evitam remoções físicas (principalmente por LGPD e integridade referencial).
+- **[Offer]**: Oferta acadêmica (curso, bolsa, estágio) publicada por uma `institution` e opcionalmente associada a um `program`. Contém tipo, status e janelas de publicação/candidatura (com regra `application_deadline > publication_date`).
+
+- **[User]**: Identidade autenticável (cadastro/login) com credenciais (hash de senha) e trilha de ciclo de vida (soft delete + motivo). Serve como base para autorização (papéis) e como referência do titular (data subject) e do agente (actor) em registros de auditoria.
+
+- **[Role]**: Catálogo de perfis de acesso (ex.: `admin`, `user/candidate`) usado para aplicar autorização baseada em papéis (RBAC).
+
+- **[UserRole]**: Tabela de junção N:N entre `user` e `role`, permitindo que um usuário possua múltiplos papéis (e.g., admin + outro perfil) e suportando evolução futura de permissões.
+
+- **[CandidateProfile]**: Perfil do candidato com dados pessoais separados de `User` (privacy-by-design). Vinculado 1:1 ao `user`. Pode conter campos adicionais (ex.: CPF, data de nascimento) e aplica soft delete para suportar políticas LGPD. **Não armazena consentimento por candidatura**; o consentimento contextual foi movido para `Consent`.
+
+- **[Application]**: Candidatura de um candidato (`candidate_profile`) para uma `offer`, com status do processo seletivo. Impõe unicidade por par (`candidate_profile_id`, `offer_id`) para evitar candidatura duplicada e deve respeitar regras de prazo (não permitir apply após `application_deadline`).
+
+- **[Consent]**: Registro de consentimento **contextual e versionado** associado a uma candidatura (`application`) e ao titular (`user`). Permite registrar quando o consentimento foi dado (`consented_at`), qual versão de termos/política foi aceita (`terms_version`) e o **escopo** do consentimento (`scope`, p.ex. aceite de termos da candidatura, compartilhamento de dados, etc.). Suporta revogação sem perda de histórico (`revoked_at`) e pode guardar evidências técnicas (IP, user agent, hash/assinatura do texto exibido), reforçando rastreabilidade e accountability. (Recomendável garantir unicidade por `application_id + scope + terms_version`.)
+
+#### LGPD / Audit (opcional na implementação inicial, recomendado no design)
+
+- **[AuditEvent]**: Registro append-only de auditoria de alterações. Captura quem executou (`actor_user_id`), quando (`occurred_at`), qual ação (`action`) e qual registro foi afetado (`entity_type` + `entity_id`), além de contexto técnico (IP, user agent, request id) e diffs (`before`/`after`) para rastreabilidade de mudanças em dados sensíveis e estados críticos (ex.: status de candidatura, mudanças em perfil, criação/alteração de ofertas, registros de consentimento).
+
+- **[DataAccessLog]**: Registro de auditoria de acesso/leitura a dados (principalmente pessoais). Captura quem acessou (`actor_user_id`), quando (`accessed_at`), de quem são os dados (`data_subject_user_id`, quando aplicável), qual recurso foi consultado (`resource`/`resource_id`), finalidade (`purpose`) e contexto técnico (IP, user agent, request id). Ideal para rastrear acessos administrativos, especialmente quando o ator não é o titular, e suportar accountability LGPD.
+
+
+### 2.2 Regras e constraints no modelo de dados
+
+As regras e constraints a seguir derivam diretamente dos requisitos funcionais (RFs) e garantem consistência, integridade e conformidade legal (LGPD) no modelo de dados.
+
+- **Unicidade de candidatura (RF-009):**  
+  A entidade `Application` deve ser única por par (`candidate_profile_id`, `offer_id`), impedindo que um mesmo candidato realize múltiplas candidaturas para a mesma oferta.  
+  *Implementação sugerida:* `UNIQUE (candidate_profile_id, offer_id)`.
+
+- **Integridade temporal da oferta (RF-010):**  
+  A entidade `Offer` deve respeitar a regra `application_deadline > publication_date`, evitando janelas de candidatura inválidas ou conflitantes.  
+  *Implementação sugerida:* constraint de banco (`CHECK`) ou validação obrigatória no caso de uso de criação/atualização de oferta.
+
+- **Validação de prazo de candidatura (RF-011):**  
+  Não é permitido criar uma `Application` para uma `Offer` cujo `application_deadline` já tenha expirado no momento da requisição.  
+  *Implementação sugerida:* validação no serviço/caso de uso de criação de candidatura, com base na data/hora atual do sistema.
+
+- **Controle de acesso por papel (RBAC) (RF-005):**  
+  Apenas usuários com papel `admin` podem criar, atualizar ou remover `Offer`.  
+  *Implementação sugerida:* validação no nível de aplicação (middleware/guard), utilizando as entidades `Role` e `UserRole`. O modelo de dados suporta essa regra ao permitir múltiplos papéis por usuário.
+
+- **Consistência de autenticação e autorização (RF-001, RF-002):**  
+  A entidade `User` deve armazenar apenas o hash da senha (ex.: bcrypt), nunca a senha em texto puro. A emissão de JWT depende da associação correta entre `User` e `Role`, refletida no modelo por meio de `UserRole`.
+
+- **Separação de identidade e dados pessoais (privacy-by-design):**  
+  Dados pessoais do candidato devem residir exclusivamente em `CandidateProfile`, mantendo a entidade `User` focada apenas em autenticação e autorização. Essa separação reduz exposição indevida e facilita atendimento a solicitações LGPD.
+
+- **Consentimento contextual e versionado (RF-006, RF-013):**  
+  Cada candidatura (`Application`) deve possuir ao menos um registro de `Consent` válido, associado ao titular (`User`) e à candidatura específica. O consentimento deve registrar versão de termos, data/hora do aceite e escopo.  
+  *Implementação sugerida:* constraint lógica exigindo a existência de `Consent` para `Application` ativa, com unicidade recomendada por (`application_id`, `scope`, `terms_version`).
+
+- **Soft delete e retenção histórica (LGPD):**  
+  As entidades principais (`User`, `CandidateProfile`, `Offer`, `Application`) utilizam soft delete (`deleted_at`) para preservar histórico, integridade referencial e rastreabilidade, evitando remoções físicas diretas.
+
+- **Auditoria de alterações (RF-013):**  
+  Alterações relevantes em entidades sensíveis (ex.: `Offer`, `Application`, `CandidateProfile`, `Consent`) devem gerar registros em `AuditEvent`, em modo append-only, garantindo rastreabilidade completa de quem alterou, quando e o que foi alterado.
+
+- **Auditoria de acesso a dados pessoais (RF-013):**  
+  Leituras de dados pessoais, especialmente quando realizadas por usuários diferentes do titular, devem ser registradas em `DataAccessLog`, incluindo ator, titular, finalidade e contexto técnico (IP, user agent).
+
+Essas regras garantem que o modelo de dados suporte corretamente os fluxos funcionais definidos, mantendo consistência técnica, segurança, governança de acesso e aderência às exigências da LGPD.
+
 
 ---
 
@@ -185,29 +234,87 @@ Campos principais:
 ---
 
 ## 6. Decisões Técnicas Fundamentais
+
 ### 6.1 API: REST (versionada)
 
-- REST atende bem CRUD e integrações diversas.
-- Versionamento: `/api/v1/...` para estabilidade e evolução.
+- Arquitetura REST atende de forma adequada operações CRUD, fluxos de candidatura e integrações futuras (web, mobile, terceiros).
+- Versionamento explícito via URL (`/api/v1/...`) garante estabilidade para clientes existentes e permite evolução controlada da API sem breaking changes.
+- Uso consistente de verbos HTTP (`GET`, `POST`, `PUT/PATCH`, `DELETE`) e códigos de status semânticos.
 
-### 6.2 Autenticação/Autorização: JWT + RBAC
 
-- JWT para autenticação stateless.
-- RBAC para controlar ações administrativas (ex.: criar offer).
+### 6.2 Autenticação e Autorização: JWT + RBAC
 
-### 6.3 Banco de dados: PostgreSQL
+- Autenticação baseada em **JWT (JSON Web Token)** para comunicação stateless entre cliente e API.
+- Tokens carregam identificação do usuário e seus papéis, reduzindo consultas repetidas ao banco.
+- **RBAC (Role-Based Access Control)** aplicado para restringir operações sensíveis (ex.: apenas `admin` pode criar/atualizar/deletar `Offer`).
+- Modelo de dados (`User`, `Role`, `UserRole`) suporta múltiplos papéis por usuário e evolução futura de permissões.
 
-Justificativa:
 
-- Consistência (ACID) e integridade referencial (relacionamentos e constraints)
-- Consultas com filtros e paginação bem suportadas com índices
-- Melhor suporte a auditoria e logs estruturados (JSONB para before/after)
+### 6.3 Banco de Dados: PostgreSQL
 
-### 6.4 Tratamento de erros
+**Justificativa:**
 
-- Payload de erro padronizado (ex.: `code`, `message`, `details`, `request_id`)
-- HTTP status codes consistentes
-- Logging estruturado por request
+- Suporte completo a **ACID**, constraints (`UNIQUE`, `CHECK`, `FOREIGN KEY`) e integridade referencial.
+- Excelente desempenho para consultas com filtros, ordenação e paginação (uso de índices).
+- Tipos avançados como `UUID`, `timestamptz`, `citext`, `jsonb` e `inet` adequados ao domínio.
+- Uso de `jsonb` para auditoria (`before` / `after`) sem perda de flexibilidade.
+- Adequado para estratégias de soft delete e retenção histórica exigidas pela LGPD.
+
+
+### 6.4 Stack Tecnológica
+
+- **Linguagem:** Python 3.x
+- **Framework Web:** FastAPI  
+  - Tipagem explícita
+  - Validação automática de payloads (Pydantic)
+  - OpenAPI/Swagger nativo
+- **ORM / Mapeamento:** SQLAlchemy 2.x
+- **Migrations:** Alembic
+- **Autenticação:** JWT (ex.: `python-jose`)
+- **Hash de senha:** bcrypt
+- **Banco de dados:** PostgreSQL
+- **Testes:** pytest
+- **Containerização:** Docker / Docker Compose
+- **Configuração:** Variáveis de ambiente (12-factor app)
+
+
+### 6.5 Modelagem e Evolução do Banco
+
+- Migrations versionadas e reproduzíveis via Alembic.
+- Uso de constraints no banco para reforçar regras críticas (unicidade, datas).
+- Evitar lógica de negócio complexa em triggers; priorizar regras explícitas nos casos de uso.
+- Estrutura preparada para multi-instituição e crescimento do volume de dados.
+
+
+### 6.6 LGPD, Auditoria e Governança de Dados
+
+- **Privacy-by-design:** separação entre identidade (`User`) e dados pessoais (`CandidateProfile`).
+- **Consentimento explícito e contextual:** entidade `Consent` vinculada à `Application`.
+- **Auditoria de alterações:** `AuditEvent` em modo append-only.
+- **Auditoria de acessos:** `DataAccessLog` para leituras de dados pessoais.
+- Suporte a accountability, rastreabilidade e futuras solicitações de titulares (ex.: acesso, correção, exclusão lógica).
+
+
+### 6.7 Observabilidade e Logging
+
+- Logging estruturado (JSON) por request.
+- Correlação de logs via `request_id`.
+- Registro consistente de erros, auditorias e acessos sensíveis.
+- Preparação para integração futura com ferramentas de observabilidade (ex.: OpenTelemetry, ELK, Grafana).
+
+
+### 6.8 Tratamento de Erros
+
+- Payload de erro padronizado, contendo:
+  - `code`: identificador do erro
+  - `message`: descrição amigável
+  - `details`: informações adicionais (opcional)
+  - `request_id`: correlação para debug
+- Uso consistente de HTTP status codes (`400`, `401`, `403`, `404`, `409`, `422`, `500`).
+- Erros de domínio tratados no nível de aplicação, com m
+
+
+Essas decisões técnicas estabelecem uma base sólida para evolução do sistema, priorizando clareza arquitetural, segurança, conformidade legal e facilidade de manutenção.
 
 ---
 
@@ -243,7 +350,6 @@ Justificativa:
 
 ## Architecture Decision Records (ADRs)
 
-## Architecture Decision Records (ADRs)
 
 | ID | Arquivo | Título | Objetivo da Decisão |
 |----|--------|--------|---------------------|
