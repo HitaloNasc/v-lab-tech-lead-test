@@ -1,10 +1,18 @@
 from fastapi import APIRouter, Depends, status, Query
 from typing import List, Optional
 from uuid import UUID
-from app.infrastructure.repositories.program_repository_sqlalchemy import ProgramRepositorySQLAlchemy
-from app.infrastructure.repositories.institution_repository_sqlalchemy import InstitutionRepositorySQLAlchemy
+from app.infrastructure.repositories.program_repository_sqlalchemy import (
+    ProgramRepositorySQLAlchemy,
+)
+from app.infrastructure.repositories.institution_repository_sqlalchemy import (
+    InstitutionRepositorySQLAlchemy,
+)
 from app.application.program_use_cases import (
-    CreateProgram, ListPrograms, GetProgramById, UpdateProgram, DeleteProgram
+    CreateProgram,
+    ListPrograms,
+    GetProgramById,
+    UpdateProgram,
+    DeleteProgram,
 )
 from app.infrastructure.db import get_db
 from app.presentation.schemas import ProgramCreate, ProgramRead, ProgramUpdate
@@ -41,7 +49,9 @@ async def list_programs(
     repo: ProgramRepositorySQLAlchemy = Depends(get_program_repo),
 ):
     use_case = ListPrograms(repo)
-    items = await use_case.execute(institution_id=institution_id, limit=limit, offset=offset)
+    items = await use_case.execute(
+        institution_id=institution_id, limit=limit, offset=offset
+    )
     return [ProgramRead.from_domain(i) for i in items]
 
 
@@ -54,7 +64,11 @@ async def get_program_by_id(
     item = await use_case.execute(program_id)
     if not item:
         from app.domain.errors import NotFoundError
-        raise NotFoundError(message="Program not found", details=[{"field": "id", "reason": "not found"}])
+
+        raise NotFoundError(
+            message="Program not found",
+            details=[{"field": "id", "reason": "not found"}],
+        )
     return ProgramRead.from_domain(item)
 
 
@@ -68,7 +82,11 @@ async def update_program(
     program = await repo.get_by_id(program_id)
     if not program:
         from app.domain.errors import NotFoundError
-        raise NotFoundError(message="Program not found", details=[{"field": "id", "reason": "not found"}])
+
+        raise NotFoundError(
+            message="Program not found",
+            details=[{"field": "id", "reason": "not found"}],
+        )
     for field, value in payload.dict(exclude_unset=True).items():
         setattr(program, field, value)
     updated = await use_case.execute(program)

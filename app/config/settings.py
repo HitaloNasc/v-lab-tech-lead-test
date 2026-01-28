@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     JWT_EXPIRES_IN: int = 3600
     RATE_LIMIT_PER_MINUTE: int = 60
 
+
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()

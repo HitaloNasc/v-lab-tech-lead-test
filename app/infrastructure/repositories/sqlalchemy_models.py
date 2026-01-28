@@ -245,12 +245,20 @@ class RoleModel(Base):
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
     updated_at = Column(
-        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     def to_domain(self) -> Role:
-        return Role(id=self.id, name=self.name, description=self.description, created_at=self.created_at)
+        return Role(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            created_at=self.created_at,
+        )
 
     @classmethod
     def from_domain(cls, role: Role) -> "RoleModel":
@@ -270,14 +278,23 @@ class RoleModel(Base):
 class UserRoleModel(Base):
     __tablename__ = "user_roles"
 
-    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    role_id = Column(PG_UUID(as_uuid=True), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    user_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role_id = Column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("roles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+    )
 
     # relationships (optional convenience)
     role = relationship("RoleModel")
     # user relationship is optional here to avoid circular import issues
-
 
 
 class UserModel(Base):
@@ -359,6 +376,7 @@ class UserModel(Base):
     # optional convenience relationship to InstitutionModel
     institution = relationship("InstitutionModel")
 
+
 class CandidateProfileModel(Base):
     __tablename__ = "candidate_profiles"
 
@@ -377,7 +395,10 @@ class CandidateProfileModel(Base):
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
     updated_at = Column(
-        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     deleted_by = Column(PG_UUID(as_uuid=True), nullable=True)
@@ -441,14 +462,23 @@ class ApplicationModel(Base):
         index=True,
     )
     status = Column(String(50), nullable=False, default="submitted", index=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     deleted_by = Column(PG_UUID(as_uuid=True), nullable=True)
     deletion_reason = Column(String(255), nullable=True)
 
     __table_args__ = (
-        UniqueConstraint("candidate_profile_id", "offer_id", name="uq_applications_candidate_offer"),
+        UniqueConstraint(
+            "candidate_profile_id", "offer_id", name="uq_applications_candidate_offer"
+        ),
     )
 
     def to_domain(self) -> Application:

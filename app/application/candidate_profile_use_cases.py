@@ -11,17 +11,31 @@ class CreateCandidateProfile:
         self.repo = repo
         self.user_repo = user_repo
 
-    async def execute(self, user_id: UUID, full_name: str, date_of_birth: Optional[str] = None, cpf: Optional[str] = None) -> CandidateProfile:
+    async def execute(
+        self,
+        user_id: UUID,
+        full_name: str,
+        date_of_birth: Optional[str] = None,
+        cpf: Optional[str] = None,
+    ) -> CandidateProfile:
         # validate user exists
         user = await self.user_repo.get_by_id(user_id)
         if not user:
-            raise NotFoundError(message="User not found", details=[{"field": "user_id", "reason": "not found"}])
+            raise NotFoundError(
+                message="User not found",
+                details=[{"field": "user_id", "reason": "not found"}],
+            )
         # ensure unique: no existing profile for user
         existing = await self.repo.get_by_user_id(user_id)
         if existing:
-            raise ConflictError(message="CandidateProfile already exists for user", details=[{"field": "user_id", "reason": "unique"}])
+            raise ConflictError(
+                message="CandidateProfile already exists for user",
+                details=[{"field": "user_id", "reason": "unique"}],
+            )
 
-        profile = CandidateProfile(user_id=user_id, full_name=full_name, date_of_birth=date_of_birth, cpf=cpf)
+        profile = CandidateProfile(
+            user_id=user_id, full_name=full_name, date_of_birth=date_of_birth, cpf=cpf
+        )
         return await self.repo.create(profile)
 
 
@@ -48,7 +62,10 @@ class UpdateCandidateProfile:
     async def execute(self, profile: CandidateProfile) -> CandidateProfile:
         current = await self.repo.get_by_id(profile.id)
         if not current:
-            raise NotFoundError(message="CandidateProfile not found", details=[{"field": "id", "reason": "not found"}])
+            raise NotFoundError(
+                message="CandidateProfile not found",
+                details=[{"field": "id", "reason": "not found"}],
+            )
         return await self.repo.update(profile)
 
 

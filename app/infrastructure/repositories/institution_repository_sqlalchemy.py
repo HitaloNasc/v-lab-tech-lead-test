@@ -19,9 +19,13 @@ class InstitutionRepositorySQLAlchemy(InstitutionRepository):
             await session.refresh(db_inst)
             return db_inst.to_domain()
 
-    async def list(self, name: Optional[str] = None, limit: int = 20, offset: int = 0) -> List[InstitutionModel]:
+    async def list(
+        self, name: Optional[str] = None, limit: int = 20, offset: int = 0
+    ) -> List[InstitutionModel]:
         async with self.session_factory() as session:
-            query = select(InstitutionModel).where(InstitutionModel.deleted_at.is_(None))
+            query = select(InstitutionModel).where(
+                InstitutionModel.deleted_at.is_(None)
+            )
             if name:
                 query = query.where(InstitutionModel.name.ilike(f"%{name}%"))
             query = query.offset(offset).limit(limit)
@@ -31,7 +35,10 @@ class InstitutionRepositorySQLAlchemy(InstitutionRepository):
     async def get_by_id(self, institution_id: UUID) -> Optional[InstitutionModel]:
         async with self.session_factory() as session:
             result = await session.execute(
-                select(InstitutionModel).where(InstitutionModel.id == institution_id, InstitutionModel.deleted_at.is_(None))
+                select(InstitutionModel).where(
+                    InstitutionModel.id == institution_id,
+                    InstitutionModel.deleted_at.is_(None),
+                )
             )
             db_inst = result.scalar_one_or_none()
             return db_inst.to_domain() if db_inst else None
@@ -47,7 +54,9 @@ class InstitutionRepositorySQLAlchemy(InstitutionRepository):
             await session.refresh(db_inst)
             return db_inst.to_domain()
 
-    async def soft_delete(self, institution_id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, institution_id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         async with self.session_factory() as session:
             db_inst = await session.get(InstitutionModel, institution_id)
             if db_inst and not db_inst.deleted_at:

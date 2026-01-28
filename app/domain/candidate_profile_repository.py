@@ -22,7 +22,9 @@ class CandidateProfileRepository(ABC):
         pass
 
     @abstractmethod
-    async def soft_delete(self, id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         pass
 
     @abstractmethod

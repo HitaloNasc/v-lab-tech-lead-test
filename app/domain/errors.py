@@ -30,6 +30,7 @@ class AppError(Exception):
 # Validation / Business rules
 # -----------------------------
 
+
 class ValidationError(AppError):
     def __init__(
         self,
@@ -68,6 +69,7 @@ class BusinessRuleViolation(AppError):
 # -----------------------------
 # Resource / access errors
 # -----------------------------
+
 
 class NotFoundError(AppError):
     def __init__(

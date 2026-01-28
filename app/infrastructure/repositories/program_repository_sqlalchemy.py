@@ -23,11 +23,16 @@ class ProgramRepositorySQLAlchemy(ProgramRepository):
             except IntegrityError as e:
                 await session.rollback()
                 # Likely foreign key violation for institution_id — map to NotFoundError
-                raise NotFoundError(message="Institution not found", details=[{"field": "institution_id", "reason": "not found"}])
+                raise NotFoundError(
+                    message="Institution not found",
+                    details=[{"field": "institution_id", "reason": "not found"}],
+                )
             await session.refresh(db_obj)
             return db_obj.to_domain()
 
-    async def list(self, institution_id: Optional[UUID] = None, limit: int = 20, offset: int = 0) -> List[Program]:
+    async def list(
+        self, institution_id: Optional[UUID] = None, limit: int = 20, offset: int = 0
+    ) -> List[Program]:
         async with self.session_factory() as session:
             query = select(ProgramModel).where(ProgramModel.deleted_at.is_(None))
             if institution_id:
@@ -39,7 +44,9 @@ class ProgramRepositorySQLAlchemy(ProgramRepository):
     async def get_by_id(self, program_id: UUID) -> Optional[Program]:
         async with self.session_factory() as session:
             result = await session.execute(
-                select(ProgramModel).where(ProgramModel.id == program_id, ProgramModel.deleted_at.is_(None))
+                select(ProgramModel).where(
+                    ProgramModel.id == program_id, ProgramModel.deleted_at.is_(None)
+                )
             )
             db_obj = result.scalar_one_or_none()
             return db_obj.to_domain() if db_obj else None
@@ -55,7 +62,9 @@ class ProgramRepositorySQLAlchemy(ProgramRepository):
             await session.refresh(db_obj)
             return db_obj.to_domain()
 
-    async def soft_delete(self, program_id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, program_id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         async with self.session_factory() as session:
             db_obj = await session.get(ProgramModel, program_id)
             if db_obj and not db_obj.deleted_at:

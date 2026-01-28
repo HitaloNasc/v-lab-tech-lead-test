@@ -1,12 +1,22 @@
 from fastapi import APIRouter, Depends, status, Query
 from typing import List, Optional
 from uuid import UUID
-from app.infrastructure.repositories.institution_repository_sqlalchemy import InstitutionRepositorySQLAlchemy
+from app.infrastructure.repositories.institution_repository_sqlalchemy import (
+    InstitutionRepositorySQLAlchemy,
+)
 from app.application.institution_use_cases import (
-    CreateInstitution, ListInstitutions, GetInstitutionById, UpdateInstitution, DeleteInstitution
+    CreateInstitution,
+    ListInstitutions,
+    GetInstitutionById,
+    UpdateInstitution,
+    DeleteInstitution,
 )
 from app.infrastructure.db import get_db
-from app.presentation.schemas import InstitutionCreate, InstitutionRead, InstitutionUpdate
+from app.presentation.schemas import (
+    InstitutionCreate,
+    InstitutionRead,
+    InstitutionUpdate,
+)
 from app.domain.institution import Institution
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,7 +58,11 @@ async def get_institution_by_id(
     inst = await use_case.execute(institution_id)
     if not inst:
         from app.domain.errors import NotFoundError
-        raise NotFoundError(message="Institution not found", details=[{"field": "id", "reason": "not found"}])
+
+        raise NotFoundError(
+            message="Institution not found",
+            details=[{"field": "id", "reason": "not found"}],
+        )
     return InstitutionRead.from_domain(inst)
 
 
@@ -62,7 +76,11 @@ async def update_institution(
     inst = await repo.get_by_id(institution_id)
     if not inst:
         from app.domain.errors import NotFoundError
-        raise NotFoundError(message="Institution not found", details=[{"field": "id", "reason": "not found"}])
+
+        raise NotFoundError(
+            message="Institution not found",
+            details=[{"field": "id", "reason": "not found"}],
+        )
     for field, value in inst_in.dict(exclude_unset=True).items():
         setattr(inst, field, value)
     updated = await use_case.execute(inst)

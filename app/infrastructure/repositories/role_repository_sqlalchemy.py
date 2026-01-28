@@ -21,19 +21,32 @@ class RoleRepositorySQLAlchemy(RoleRepository):
 
     async def get_by_id(self, id: UUID) -> Optional[RoleModel]:
         async with self.session_factory() as session:
-            result = await session.execute(select(RoleModel).where(RoleModel.id == id, RoleModel.deleted_at.is_(None)))
+            result = await session.execute(
+                select(RoleModel).where(
+                    RoleModel.id == id, RoleModel.deleted_at.is_(None)
+                )
+            )
             db_obj = result.scalar_one_or_none()
             return db_obj.to_domain() if db_obj else None
 
     async def get_by_name(self, name: str) -> Optional[RoleModel]:
         async with self.session_factory() as session:
-            result = await session.execute(select(RoleModel).where(RoleModel.name == name, RoleModel.deleted_at.is_(None)))
+            result = await session.execute(
+                select(RoleModel).where(
+                    RoleModel.name == name, RoleModel.deleted_at.is_(None)
+                )
+            )
             db_obj = result.scalar_one_or_none()
             return db_obj.to_domain() if db_obj else None
 
     async def list(self, limit: int = 20, offset: int = 0) -> List[RoleModel]:
         async with self.session_factory() as session:
-            query = select(RoleModel).where(RoleModel.deleted_at.is_(None)).offset(offset).limit(limit)
+            query = (
+                select(RoleModel)
+                .where(RoleModel.deleted_at.is_(None))
+                .offset(offset)
+                .limit(limit)
+            )
             result = await session.execute(query)
             return [row.to_domain() for row in result.scalars().all()]
 

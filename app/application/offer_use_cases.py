@@ -10,7 +10,12 @@ from app.domain.errors import ValidationError, NotFoundError
 
 
 class CreateOffer:
-    def __init__(self, repo: OfferRepository, institution_repo: InstitutionRepository, program_repo: ProgramRepository):
+    def __init__(
+        self,
+        repo: OfferRepository,
+        institution_repo: InstitutionRepository,
+        program_repo: ProgramRepository,
+    ):
         self.repo = repo
         self.institution_repo = institution_repo
         self.program_repo = program_repo
@@ -39,13 +44,19 @@ class CreateOffer:
         # validate institution exists
         inst = await self.institution_repo.get_by_id(institution_id)
         if not inst:
-            raise NotFoundError(message="Institution not found", details=[{"field": "institution_id", "reason": "not found"}])
+            raise NotFoundError(
+                message="Institution not found",
+                details=[{"field": "institution_id", "reason": "not found"}],
+            )
 
         # validate program if provided
         if program_id:
             prog = await self.program_repo.get_by_id(program_id)
             if not prog:
-                raise NotFoundError(message="Program not found", details=[{"field": "program_id", "reason": "not found"}])
+                raise NotFoundError(
+                    message="Program not found",
+                    details=[{"field": "program_id", "reason": "not found"}],
+                )
 
         offer = Offer(
             institution_id=institution_id,
@@ -102,8 +113,14 @@ class UpdateOffer:
                 details=[{"field": "id", "reason": "not found"}],
             )
         # Verifica se algum dos campos foi alterado
-        pub_changed = offer.publication_date and offer.publication_date != current.publication_date
-        deadline_changed = offer.application_deadline and offer.application_deadline != current.application_deadline
+        pub_changed = (
+            offer.publication_date
+            and offer.publication_date != current.publication_date
+        )
+        deadline_changed = (
+            offer.application_deadline
+            and offer.application_deadline != current.application_deadline
+        )
         if pub_changed or deadline_changed:
             pub = offer.publication_date or current.publication_date
             deadline = offer.application_deadline or current.application_deadline

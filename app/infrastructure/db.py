@@ -4,7 +4,7 @@ from app.config.settings import get_settings
 
 settings = get_settings()
 
-DATABASE_URL = settings.DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://')
+DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 
@@ -15,6 +15,7 @@ SessionLocal = sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
 
 async def get_db():
     async with SessionLocal() as session:

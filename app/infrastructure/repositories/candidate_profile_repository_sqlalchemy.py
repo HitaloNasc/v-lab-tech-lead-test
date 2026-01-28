@@ -21,19 +21,34 @@ class CandidateProfileRepositorySQLAlchemy(CandidateProfileRepository):
                 await session.commit()
             except IntegrityError:
                 await session.rollback()
-                raise ConflictError(message="CandidateProfile conflict", details=[{"field": "user_id", "reason": "duplicate or foreign key error"}])
+                raise ConflictError(
+                    message="CandidateProfile conflict",
+                    details=[
+                        {"field": "user_id", "reason": "duplicate or foreign key error"}
+                    ],
+                )
             await session.refresh(db_obj)
             return db_obj.to_domain()
 
     async def get_by_id(self, id: UUID) -> Optional[CandidateProfileModel]:
         async with self.session_factory() as session:
-            result = await session.execute(select(CandidateProfileModel).where(CandidateProfileModel.id == id, CandidateProfileModel.deleted_at.is_(None)))
+            result = await session.execute(
+                select(CandidateProfileModel).where(
+                    CandidateProfileModel.id == id,
+                    CandidateProfileModel.deleted_at.is_(None),
+                )
+            )
             db_obj = result.scalar_one_or_none()
             return db_obj.to_domain() if db_obj else None
 
     async def get_by_user_id(self, user_id: UUID) -> Optional[CandidateProfileModel]:
         async with self.session_factory() as session:
-            result = await session.execute(select(CandidateProfileModel).where(CandidateProfileModel.user_id == user_id, CandidateProfileModel.deleted_at.is_(None)))
+            result = await session.execute(
+                select(CandidateProfileModel).where(
+                    CandidateProfileModel.user_id == user_id,
+                    CandidateProfileModel.deleted_at.is_(None),
+                )
+            )
             db_obj = result.scalar_one_or_none()
             return db_obj.to_domain() if db_obj else None
 
@@ -48,7 +63,9 @@ class CandidateProfileRepositorySQLAlchemy(CandidateProfileRepository):
             await session.refresh(db_obj)
             return db_obj.to_domain()
 
-    async def soft_delete(self, id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         async with self.session_factory() as session:
             db_obj = await session.get(CandidateProfileModel, id)
             if db_obj and not db_obj.deleted_at:
@@ -57,7 +74,14 @@ class CandidateProfileRepositorySQLAlchemy(CandidateProfileRepository):
                 db_obj.deletion_reason = reason
                 await session.commit()
 
-    async def list(self, limit: int = 20, offset: int = 0) -> List[CandidateProfileModel]:
+    async def list(
+        self, limit: int = 20, offset: int = 0
+    ) -> List[CandidateProfileModel]:
         async with self.session_factory() as session:
-            result = await session.execute(select(CandidateProfileModel).where(CandidateProfileModel.deleted_at.is_(None)).offset(offset).limit(limit))
+            result = await session.execute(
+                select(CandidateProfileModel)
+                .where(CandidateProfileModel.deleted_at.is_(None))
+                .offset(offset)
+                .limit(limit)
+            )
             return [row.to_domain() for row in result.scalars().all()]

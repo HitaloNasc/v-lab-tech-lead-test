@@ -22,7 +22,9 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    async def soft_delete(self, user_id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, user_id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         pass
 
     @abstractmethod

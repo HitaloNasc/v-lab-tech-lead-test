@@ -3,6 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from app.domain.offer import Offer, OfferType, OfferStatus
 
+
 class OfferRepository(ABC):
     @abstractmethod
     async def create(self, offer: Offer) -> Offer:
@@ -28,5 +29,7 @@ class OfferRepository(ABC):
         pass
 
     @abstractmethod
-    async def soft_delete(self, offer_id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, offer_id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         pass

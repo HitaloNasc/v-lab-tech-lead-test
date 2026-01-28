@@ -19,7 +19,6 @@ from starlette import status
 from app.domain.errors import AppError
 from app.infrastructure.request_id_middleware import get_request_id
 
-
 # ----------------------------
 # Error envelope helpers
 # ----------------------------

@@ -14,11 +14,15 @@ class ApplicationRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_candidate_and_offer(self, candidate_profile_id: UUID, offer_id: UUID) -> Optional[Application]:
+    async def get_by_candidate_and_offer(
+        self, candidate_profile_id: UUID, offer_id: UUID
+    ) -> Optional[Application]:
         pass
 
     @abstractmethod
-    async def list_by_candidate_profile(self, candidate_profile_id: UUID, limit: int = 20, offset: int = 0) -> List[Application]:
+    async def list_by_candidate_profile(
+        self, candidate_profile_id: UUID, limit: int = 20, offset: int = 0
+    ) -> List[Application]:
         pass
 
     @abstractmethod
@@ -26,5 +30,7 @@ class ApplicationRepository(ABC):
         pass
 
     @abstractmethod
-    async def soft_delete(self, id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         pass

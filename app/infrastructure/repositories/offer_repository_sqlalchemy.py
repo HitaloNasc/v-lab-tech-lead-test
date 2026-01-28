@@ -11,6 +11,7 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from app.domain.errors import NotFoundError
 
+
 class OfferRepositorySQLAlchemy(OfferRepository):
     def __init__(self, session_factory=SessionLocal):
         self.session_factory = session_factory
@@ -34,7 +35,9 @@ class OfferRepositorySQLAlchemy(OfferRepository):
             await session.refresh(db_offer)
             return db_offer.to_domain()
 
-    async def list(self, institution_id=None, type=None, status=None, limit=20, offset=0) -> List[Offer]:
+    async def list(
+        self, institution_id=None, type=None, status=None, limit=20, offset=0
+    ) -> List[Offer]:
         async with self.session_factory() as session:
             query = select(OfferModel).where(OfferModel.deleted_at.is_(None))
             if institution_id:
@@ -50,7 +53,9 @@ class OfferRepositorySQLAlchemy(OfferRepository):
     async def get_by_id(self, offer_id: UUID) -> Optional[Offer]:
         async with self.session_factory() as session:
             result = await session.execute(
-                select(OfferModel).where(OfferModel.id == offer_id, OfferModel.deleted_at.is_(None))
+                select(OfferModel).where(
+                    OfferModel.id == offer_id, OfferModel.deleted_at.is_(None)
+                )
             )
             db_offer = result.scalar_one_or_none()
             return db_offer.to_domain() if db_offer else None
@@ -66,7 +71,9 @@ class OfferRepositorySQLAlchemy(OfferRepository):
             await session.refresh(db_offer)
             return db_offer.to_domain()
 
-    async def soft_delete(self, offer_id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, offer_id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         async with self.session_factory() as session:
             db_offer = await session.get(OfferModel, offer_id)
             if db_offer and not db_offer.deleted_at:

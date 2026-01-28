@@ -3,16 +3,19 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
+
 class OfferType(str, Enum):
     COURSE = "course"
     SCHOLARSHIP = "scholarship"
     INTERNSHIP = "internship"
+
 
 class OfferStatus(str, Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
     EXPIRED = "expired"
     DELETED = "deleted"
+
 
 class Offer:
     def __init__(

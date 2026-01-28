@@ -21,25 +21,55 @@ class ApplicationRepositorySQLAlchemy(ApplicationRepository):
                 await session.commit()
             except IntegrityError:
                 await session.rollback()
-                raise ConflictError(message="Application conflict (duplicate or FK error)", details=[{"field": "candidate_profile_id|offer_id", "reason": "duplicate or missing FK"}])
+                raise ConflictError(
+                    message="Application conflict (duplicate or FK error)",
+                    details=[
+                        {
+                            "field": "candidate_profile_id|offer_id",
+                            "reason": "duplicate or missing FK",
+                        }
+                    ],
+                )
             await session.refresh(db_obj)
             return db_obj.to_domain()
 
     async def get_by_id(self, id: UUID) -> Optional[ApplicationModel]:
         async with self.session_factory() as session:
-            result = await session.execute(select(ApplicationModel).where(ApplicationModel.id == id, ApplicationModel.deleted_at.is_(None)))
+            result = await session.execute(
+                select(ApplicationModel).where(
+                    ApplicationModel.id == id, ApplicationModel.deleted_at.is_(None)
+                )
+            )
             db_obj = result.scalar_one_or_none()
             return db_obj.to_domain() if db_obj else None
 
-    async def get_by_candidate_and_offer(self, candidate_profile_id: UUID, offer_id: UUID) -> Optional[ApplicationModel]:
+    async def get_by_candidate_and_offer(
+        self, candidate_profile_id: UUID, offer_id: UUID
+    ) -> Optional[ApplicationModel]:
         async with self.session_factory() as session:
-            result = await session.execute(select(ApplicationModel).where(ApplicationModel.candidate_profile_id == candidate_profile_id, ApplicationModel.offer_id == offer_id, ApplicationModel.deleted_at.is_(None)))
+            result = await session.execute(
+                select(ApplicationModel).where(
+                    ApplicationModel.candidate_profile_id == candidate_profile_id,
+                    ApplicationModel.offer_id == offer_id,
+                    ApplicationModel.deleted_at.is_(None),
+                )
+            )
             db_obj = result.scalar_one_or_none()
             return db_obj.to_domain() if db_obj else None
 
-    async def list_by_candidate_profile(self, candidate_profile_id: UUID, limit: int = 20, offset: int = 0) -> List[ApplicationModel]:
+    async def list_by_candidate_profile(
+        self, candidate_profile_id: UUID, limit: int = 20, offset: int = 0
+    ) -> List[ApplicationModel]:
         async with self.session_factory() as session:
-            result = await session.execute(select(ApplicationModel).where(ApplicationModel.candidate_profile_id == candidate_profile_id, ApplicationModel.deleted_at.is_(None)).offset(offset).limit(limit))
+            result = await session.execute(
+                select(ApplicationModel)
+                .where(
+                    ApplicationModel.candidate_profile_id == candidate_profile_id,
+                    ApplicationModel.deleted_at.is_(None),
+                )
+                .offset(offset)
+                .limit(limit)
+            )
             return [row.to_domain() for row in result.scalars().all()]
 
     async def update(self, application) -> ApplicationModel:
@@ -53,7 +83,9 @@ class ApplicationRepositorySQLAlchemy(ApplicationRepository):
             await session.refresh(db_obj)
             return db_obj.to_domain()
 
-    async def soft_delete(self, id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         async with self.session_factory() as session:
             db_obj = await session.get(ApplicationModel, id)
             if db_obj and not db_obj.deleted_at:

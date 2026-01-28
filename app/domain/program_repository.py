@@ -10,7 +10,9 @@ class ProgramRepository(ABC):
         pass
 
     @abstractmethod
-    async def list(self, institution_id: Optional[UUID] = None, limit: int = 20, offset: int = 0) -> List[Program]:
+    async def list(
+        self, institution_id: Optional[UUID] = None, limit: int = 20, offset: int = 0
+    ) -> List[Program]:
         pass
 
     @abstractmethod
@@ -22,5 +24,7 @@ class ProgramRepository(ABC):
         pass
 
     @abstractmethod
-    async def soft_delete(self, program_id: UUID, deleted_by: UUID, reason: Optional[str] = None) -> None:
+    async def soft_delete(
+        self, program_id: UUID, deleted_by: UUID, reason: Optional[str] = None
+    ) -> None:
         pass
