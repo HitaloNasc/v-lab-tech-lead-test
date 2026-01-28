@@ -88,8 +88,6 @@ Sugestão: RNF-001, RNF-002...
 ### 4.2 Atributos por entidade
 ![alt text](./diagrams/concept_data_model.png)
 
-### 4.2 Atributos por entidade
-
 A seguir, os principais atributos previstos no modelo conceitual, com indicação de tipo sugerido e observações de uso/regras.
 
 #### **Institution**
