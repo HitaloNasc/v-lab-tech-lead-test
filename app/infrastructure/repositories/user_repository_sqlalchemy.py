@@ -6,6 +6,8 @@ from app.domain.user import User
 from app.domain.user_repository import UserRepository
 from app.infrastructure.db import SessionLocal
 from app.infrastructure.repositories.sqlalchemy_models import UserModel
+from app.infrastructure.repositories.sqlalchemy_models import RoleModel, UserRoleModel
+from app.domain.role import Role as RoleDomain
 from datetime import datetime
 from app.domain.errors import ConflictError, NotFoundError
 
@@ -24,6 +26,22 @@ class UserRepositorySQLAlchemy(UserRepository):
                 await session.rollback()
                 raise ConflictError(message="Email already exists", details=[{"field": "email", "reason": "duplicate"}])
             await session.refresh(db_obj)
+            # handle roles associations if provided on domain object
+            if hasattr(user, "roles") and user.roles:
+                for r in user.roles:
+                    role_name = r.name if hasattr(r, "name") else str(r)
+                    result = await session.execute(select(RoleModel).where(RoleModel.name == role_name, RoleModel.deleted_at.is_(None)))
+                    role_db = result.scalar_one_or_none()
+                    if not role_db:
+                        # create role if it doesn't exist
+                        role_db = RoleModel.from_domain(RoleDomain(name=role_name))
+                        session.add(role_db)
+                        await session.flush()
+                    # append association if not already present
+                    if role_db not in db_obj.roles:
+                        db_obj.roles.append(role_db)
+                await session.commit()
+                await session.refresh(db_obj)
             return db_obj.to_domain()
 
     async def get_by_id(self, user_id: UUID) -> Optional[User]:
@@ -44,6 +62,21 @@ class UserRepositorySQLAlchemy(UserRepository):
             if not db_obj or db_obj.deleted_at:
                 return None
             db_obj.update_from_domain(user)
+            # sync roles if provided
+            if hasattr(user, "roles"):
+                # clear existing and re-assign
+                db_obj.roles = []
+                for r in user.roles:
+                    role_name = r.name if hasattr(r, "name") else str(r)
+                    result = await session.execute(select(RoleModel).where(RoleModel.name == role_name, RoleModel.deleted_at.is_(None)))
+                    role_db = result.scalar_one_or_none()
+                    if not role_db:
+                        role_db = RoleModel.from_domain(RoleDomain(name=role_name))
+                        session.add(role_db)
+                        await session.flush()
+                    if role_db not in db_obj.roles:
+                        db_obj.roles.append(role_db)
+
             db_obj.updated_at = datetime.utcnow()
             await session.commit()
             await session.refresh(db_obj)

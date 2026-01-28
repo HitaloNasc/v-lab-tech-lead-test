@@ -19,7 +19,8 @@ from sqlalchemy.orm import relationship
 from app.domain.institution import Institution
 from app.domain.offer import Offer, OfferStatus, OfferType
 from app.domain.program import Program
-from app.domain.user import Role, User
+from app.domain.user import User
+from app.domain.role import Role
 
 Base = declarative_base()
 
@@ -64,6 +65,9 @@ class OfferModel(Base):
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     deleted_by = Column(PG_UUID(as_uuid=True), nullable=True)
     deletion_reason = Column(String(255), nullable=True)
+
+    # many-to-many relationship to roles via association table
+    roles = relationship("RoleModel", secondary="user_roles", backref="users")
 
     def to_domain(self) -> Offer:
         return Offer(
@@ -231,6 +235,51 @@ class ProgramModel(Base):
         self.updated_at = datetime.utcnow()
 
 
+class RoleModel(Base):
+    __tablename__ = "roles"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    name = Column(String(100), nullable=False, unique=True, index=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    def to_domain(self) -> Role:
+        return Role(id=self.id, name=self.name, description=self.description, created_at=self.created_at)
+
+    @classmethod
+    def from_domain(cls, role: Role) -> "RoleModel":
+        return cls(
+            id=role.id,
+            name=role.name,
+            description=getattr(role, "description", None),
+            created_at=role.created_at if hasattr(role, "created_at") else None,
+        )
+
+    def update_from_domain(self, role: Role):
+        self.name = role.name
+        self.description = getattr(role, "description", self.description)
+        self.updated_at = datetime.utcnow()
+
+
+class UserRoleModel(Base):
+    __tablename__ = "user_roles"
+
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    role_id = Column(PG_UUID(as_uuid=True), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+    # relationships (optional convenience)
+    role = relationship("RoleModel")
+    # user relationship is optional here to avoid circular import issues
+
+
+
 class UserModel(Base):
     __tablename__ = "users"
     __table_args__ = (UniqueConstraint("email", name="uq_users_email"),)
@@ -239,7 +288,8 @@ class UserModel(Base):
     email = Column(String(255), nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
-    role = Column(SqlEnum("userrole", name="userrole"), nullable=False, index=True)
+    # role column removed — roles are modeled via many-to-many `user_roles` association
+    # association relationship defined below
     is_active = Column(Boolean, nullable=False, default=True)
     last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
@@ -257,17 +307,21 @@ class UserModel(Base):
 
     def to_domain(self) -> "User":
         # map role string to Role enum if possible
-        try:
-            role_val = Role(self.role)
-        except Exception:
-            role_val = Role.USER
+        # build roles list from related RoleModel objects if loaded
+        roles = []
+        if hasattr(self, "roles") and self.roles is not None:
+            for r in self.roles:
+                try:
+                    roles.append(Role(id=r.id, name=r.name, created_at=r.created_at))
+                except Exception:
+                    continue
 
         return User(
             id=self.id,
             email=self.email,
             hashed_password=self.hashed_password,
             full_name=self.full_name,
-            role=role_val,
+            roles=roles,
             is_active=self.is_active,
             last_login=self.last_login,
             created_at=self.created_at,
@@ -284,7 +338,7 @@ class UserModel(Base):
             email=user.email,
             hashed_password=user.hashed_password,
             full_name=user.full_name,
-            role=user.role.value if hasattr(user.role, "value") else str(user.role),
+            # roles are handled via association table; do not write here
             is_active=user.is_active,
             last_login=user.last_login,
             created_at=user.created_at,
@@ -299,6 +353,6 @@ class UserModel(Base):
         if hasattr(user, "hashed_password") and user.hashed_password:
             self.hashed_password = user.hashed_password
         self.full_name = user.full_name
-        self.role = user.role.value if hasattr(user.role, "value") else str(user.role)
+        # roles are managed via the `user_roles` association and repository logic
         self.is_active = user.is_active
         self.updated_at = datetime.utcnow()

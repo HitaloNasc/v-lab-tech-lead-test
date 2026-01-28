@@ -3,7 +3,7 @@ from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
 from app.domain.offer import OfferType, OfferStatus, Offer
-from app.domain.user import Role
+from app.domain.role import Role as RoleDomain
 
 
 class OfferCreate(BaseModel):
@@ -51,13 +51,13 @@ class UserCreate(BaseModel):
     email: str
     password: str
     full_name: Optional[str]
-    role: Optional[Role]
+    roles: Optional[List[str]]
 
 
 class UserUpdate(BaseModel):
     full_name: Optional[str]
     password: Optional[str]
-    role: Optional[Role]
+    roles: Optional[List[str]]
     is_active: Optional[bool]
 
 
@@ -65,7 +65,7 @@ class UserRead(BaseModel):
     id: UUID
     email: str
     full_name: Optional[str]
-    role: Role
+    roles: List[dict]
     is_active: bool
     last_login: Optional[datetime]
     created_at: datetime
@@ -76,7 +76,32 @@ class UserRead(BaseModel):
         data = user.__dict__.copy()
         # never expose hashed_password
         data.pop("hashed_password", None)
+        # convert role domain objects to serializable dicts
+        roles = []
+        if hasattr(user, "roles") and user.roles:
+            for r in user.roles:
+                try:
+                    roles.append({"id": r.id, "name": r.name})
+                except Exception:
+                    continue
+        data["roles"] = roles
         return cls(**data)
+
+
+class RoleCreate(BaseModel):
+    name: str
+    description: Optional[str]
+
+
+class RoleRead(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str]
+    created_at: datetime
+
+    @classmethod
+    def from_domain(cls, role: RoleDomain):
+        return cls(id=role.id, name=role.name, description=getattr(role, "description", None), created_at=getattr(role, "created_at", datetime.utcnow()))
 
 
 class UserLogin(BaseModel):

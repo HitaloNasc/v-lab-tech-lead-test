@@ -1,8 +1,8 @@
 """baseline
 
-Revision ID: c2315c308891
+Revision ID: a72cc78e7d59
 Revises: 
-Create Date: 2026-01-27 19:08:42.116166
+Create Date: 2026-01-27 19:25:25.300361
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'c2315c308891'
+revision: str = 'a72cc78e7d59'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -33,12 +33,21 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_institutions_name'), 'institutions', ['name'], unique=False)
+    op.create_table('roles',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_roles_name'), 'roles', ['name'], unique=True)
     op.create_table('users',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('hashed_password', sa.String(length=255), nullable=False),
     sa.Column('full_name', sa.String(length=255), nullable=True),
-    sa.Column('role', sa.Enum('userrole', name='userrole'), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('last_login', sa.DateTime(timezone=True), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -50,7 +59,6 @@ def upgrade() -> None:
     sa.UniqueConstraint('email', name='uq_users_email')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=False)
-    op.create_index(op.f('ix_users_role'), 'users', ['role'], unique=False)
     op.create_table('programs',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('institution_id', sa.UUID(), nullable=False),
@@ -66,6 +74,14 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_programs_institution_id'), 'programs', ['institution_id'], unique=False)
     op.create_index(op.f('ix_programs_name'), 'programs', ['name'], unique=False)
+    op.create_table('user_roles',
+    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('role_id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('user_id', 'role_id')
+    )
     op.create_table('offers',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('institution_id', sa.UUID(), nullable=False),
@@ -101,12 +117,14 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_offers_program_id'), table_name='offers')
     op.drop_index(op.f('ix_offers_institution_id'), table_name='offers')
     op.drop_table('offers')
+    op.drop_table('user_roles')
     op.drop_index(op.f('ix_programs_name'), table_name='programs')
     op.drop_index(op.f('ix_programs_institution_id'), table_name='programs')
     op.drop_table('programs')
-    op.drop_index(op.f('ix_users_role'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
+    op.drop_index(op.f('ix_roles_name'), table_name='roles')
+    op.drop_table('roles')
     op.drop_index(op.f('ix_institutions_name'), table_name='institutions')
     op.drop_table('institutions')
     # ### end Alembic commands ###

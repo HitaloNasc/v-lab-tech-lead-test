@@ -1,13 +1,8 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID, uuid4
 
-from enum import Enum
-
-
-class Role(str, Enum):
-    ADMIN = "admin"
-    USER = "user"
+from app.domain.role import Role
 
 
 class User:
@@ -17,7 +12,7 @@ class User:
         email: str = None,
         hashed_password: str = None,
         full_name: Optional[str] = None,
-        role: Role = Role.USER,
+        roles: Optional[List[Role]] = None,
         is_active: bool = True,
         last_login: Optional[datetime] = None,
         created_at: Optional[datetime] = None,
@@ -30,7 +25,8 @@ class User:
         self.email = email
         self.hashed_password = hashed_password
         self.full_name = full_name
-        self.role = role
+        # many-to-many roles collection (list of Role domain objects)
+        self.roles = roles or []
         self.is_active = is_active
         self.last_login = last_login
         self.created_at = created_at or datetime.utcnow()

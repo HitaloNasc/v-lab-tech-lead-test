@@ -3,6 +3,7 @@ from typing import Optional
 from uuid import UUID
 
 from app.domain.user import User
+from app.domain.role import Role
 from app.domain.user_repository import UserRepository
 from app.domain.errors import ValidationError, NotFoundError
 from app.infrastructure.security import hash_password, verify_password, create_access_token
@@ -12,10 +13,14 @@ class CreateUser:
     def __init__(self, repo: UserRepository):
         self.repo = repo
 
-    async def execute(self, email: str, password: str, full_name: Optional[str] = None, role: Optional[str] = None) -> User:
+    async def execute(self, email: str, password: str, full_name: Optional[str] = None, roles: Optional[list] = None) -> User:
         # hash password
         hashed = hash_password(password)
-        user = User(email=email, hashed_password=hashed, full_name=full_name)
+        # accept optional roles list (list of role names or Role domain objects)
+        roles_objs = None
+        if roles:
+            roles_objs = [r if hasattr(r, "name") else Role(name=r) for r in roles]
+        user = User(email=email, hashed_password=hashed, full_name=full_name, roles=roles_objs)
         return await self.repo.create(user)
 
 
@@ -31,7 +36,15 @@ class AuthenticateUser:
             raise ValidationError(message="Invalid credentials", details=[{"field": "password", "reason": "invalid"}])
         if not user.is_active:
             raise ValidationError(message="User inactive", details=[{"field": "user", "reason": "inactive"}])
-        token = create_access_token(str(user.id), extra_claims={"role": user.role.value if hasattr(user.role, 'value') else str(user.role)})
+        # include roles as array claim for downstream consumers
+        roles_claim = []
+        if hasattr(user, "roles") and user.roles:
+            for r in user.roles:
+                try:
+                    roles_claim.append(r.name)
+                except Exception:
+                    continue
+        token = create_access_token(str(user.id), extra_claims={"roles": roles_claim})
         return {"access_token": token, "token_type": "bearer", "user": user}
 
 

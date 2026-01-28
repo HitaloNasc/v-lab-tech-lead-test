@@ -17,7 +17,7 @@ def get_user_repo(db: AsyncSession = Depends(get_db)):
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user(user_in: UserCreate, repo: UserRepositorySQLAlchemy = Depends(get_user_repo)):
     use_case = CreateUser(repo)
-    user = await use_case.execute(email=user_in.email, password=user_in.password, full_name=user_in.full_name)
+    user = await use_case.execute(email=user_in.email, password=user_in.password, full_name=user_in.full_name, roles=user_in.roles)
     return UserRead.from_domain(user)
 
 
@@ -43,6 +43,8 @@ async def update_user(user_id: UUID, user_in: UserUpdate, repo: UserRepositorySQ
             # set hashed_password directly
             from app.infrastructure.security import hash_password
             user.hashed_password = hash_password(value)
+        elif field == 'roles' and value is not None:
+            user.roles = value
         else:
             setattr(user, field, value)
     updated = await use_case.execute(user)
