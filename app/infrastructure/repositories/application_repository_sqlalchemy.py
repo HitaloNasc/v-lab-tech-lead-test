@@ -72,6 +72,21 @@ class ApplicationRepositorySQLAlchemy(ApplicationRepository):
             )
             return [row.to_domain() for row in result.scalars().all()]
 
+    async def list_by_offer(
+        self, offer_id: UUID, limit: int = 20, offset: int = 0
+    ) -> List[ApplicationModel]:
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(ApplicationModel)
+                .where(
+                    ApplicationModel.offer_id == offer_id,
+                    ApplicationModel.deleted_at.is_(None),
+                )
+                .offset(offset)
+                .limit(limit)
+            )
+            return [row.to_domain() for row in result.scalars().all()]
+
     async def update(self, application) -> ApplicationModel:
         async with self.session_factory() as session:
             db_obj = await session.get(ApplicationModel, application.id)

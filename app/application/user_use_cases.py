@@ -1,11 +1,12 @@
 from typing import Optional
 from uuid import UUID
 
-from app.domain.errors import NotFoundError, ValidationError
+from app.domain.errors import NotFoundError, ValidationError, ForbiddenError
 from app.domain.institution_repository import InstitutionRepository
 from app.domain.role import Role
 from app.domain.user import User
 from app.domain.user_repository import UserRepository
+from app.domain.candidate_profile_repository import CandidateProfileRepository
 from app.infrastructure.security import (
     create_access_token,
     hash_password,
@@ -129,33 +130,67 @@ class GetUserById:
 
 
 class UpdateUser:
-    def __init__(self, repo: UserRepository, institution_repo: InstitutionRepository):
+    def __init__(
+        self,
+        repo: UserRepository,
+        institution_repo: InstitutionRepository,
+        profile_repo: CandidateProfileRepository = None,
+    ):
         self.repo = repo
         self.institution_repo = institution_repo
+        self.profile_repo = profile_repo
 
-    async def execute(self, user: User) -> User:
-        current = await self.repo.get_by_id(user.id)
+    async def execute(
+        self,
+        user_id: UUID,
+        updates: dict,
+        requester_id: UUID,
+        requester_roles: Optional[list] = None,
+    ) -> User:
+        current = await self.repo.get_by_id(user_id)
         if not current:
             raise NotFoundError(
                 message="User not found",
                 details=[{"field": "id", "reason": "not found"}],
             )
 
+        normalized_requester_roles = [str(r).lower() for r in (requester_roles or [])]
+        is_sys_admin = "sys_admin" in normalized_requester_roles
+        is_institution_admin = "institution_admin" in normalized_requester_roles
+        is_candidate = "candidate" in normalized_requester_roles
+
+        # authorization: sys_admin can update any user; others only own
+        if not is_sys_admin and str(requester_id) != str(user_id):
+            raise ForbiddenError(
+                message="Not allowed to update other users",
+                details=[{"field": "user_id", "reason": "forbidden"}],
+            )
+
+        # prevent institution_admin from changing institution_id
+        if is_institution_admin and "institution_id" in updates:
+            raise ForbiddenError(
+                message="institution_admin cannot change institution_id",
+                details=[{"field": "institution_id", "reason": "forbidden"}],
+            )
+
         # determine effective roles after update
         new_roles = None
-        if hasattr(user, "roles") and user.roles is not None:
-            new_roles = [r if hasattr(r, "name") else Role(name=r) for r in user.roles]
+        if "roles" in updates and updates["roles"] is not None:
+            new_roles = [
+                r if hasattr(r, "name") else Role(name=r) for r in updates["roles"]
+            ]
         else:
             new_roles = current.roles
 
         role_names = (
             [getattr(r, "name", str(r)).lower() for r in new_roles] if new_roles else []
         )
-        inst_id = getattr(
-            user, "institution_id", getattr(current, "institution_id", None)
+
+        inst_id = updates.get(
+            "institution_id", getattr(current, "institution_id", None)
         )
 
-        if "admin" in role_names and not inst_id:
+        if "institution_admin" in role_names and not inst_id:
             raise ValidationError(
                 message="admin users must have institution_id",
                 details=[
@@ -182,8 +217,43 @@ class UpdateUser:
                     details=[{"field": "institution_id", "reason": "not found"}],
                 )
 
-        # if password present and plain, caller should set hashed_password before calling repo
-        return await self.repo.update(user)
+        # apply updates
+        # handle password hashing
+        if "password" in updates and updates["password"]:
+            current.hashed_password = hash_password(updates["password"])
+
+        if "roles" in updates and updates["roles"] is not None:
+            current.roles = updates["roles"]
+
+        # handle candidate_profile updates
+        if "candidate_profile" in updates:
+            if not is_candidate:
+                raise ForbiddenError(
+                    message="Only candidate can update candidate_profile",
+                    details=[{"field": "candidate_profile", "reason": "forbidden"}],
+                )
+            if not self.profile_repo:
+                raise ValidationError(
+                    message="candidate_profile repository not configured",
+                )
+            profile = await self.profile_repo.get_by_user_id(user_id)
+            if not profile:
+                raise NotFoundError(
+                    message="CandidateProfile not found",
+                    details=[{"field": "user_id", "reason": "not found"}],
+                )
+            for p_field, p_value in updates["candidate_profile"].items():
+                setattr(profile, p_field, p_value)
+            await self.profile_repo.update(profile)
+
+        # apply remaining top-level fields
+        skip_fields = {"password", "roles", "candidate_profile"}
+        for field, value in updates.items():
+            if field in skip_fields:
+                continue
+            setattr(current, field, value)
+
+        return await self.repo.update(current)
 
 
 class DeleteUser:

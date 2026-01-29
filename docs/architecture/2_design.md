@@ -198,7 +198,7 @@ Responsável por:
 - POST `/api/v1/applications` (candidate, precisa **consentimentir** compartilhamento de dados)
 - GET `/api/v1/offers/{id}/applications` (institution_admin-only, só visualiza dados dos candidatos que **consentimentiram**)
 - GET `/api/v1/users/{id}/applications` (candidate: self-only)
-- POST `/api/v1/applications/{id}/status` (institution_admin-only, mesma institution da offer)
+- POST `/api/v1/applications/{id}/status` (institution_admin-only, mesma institution da offer) -  [despriorizado - tempo]
 
 Validações obrigatórias no caso de uso:
 - Unicidade por (`candidate_profile_id`, `offer_id`) - usuários não podem aplicar mais de uma vez para uma mesma oferta
@@ -211,7 +211,7 @@ Validações obrigatórias no caso de uso:
 
 ### 4.4 CandidateUsers
 - PUT `/api/v1/users/{id}` (candidate: self-only)
-- DELETE `/api/v1/users/{id}` (candidate: self-only) - Direito a apagar dados LGPD
+- DELETE `/api/v1/users/{id}` (candidate: self-only) - Direito a apagar dados LGPD [despriorizado - tempo]
 
 ### 4.5 Insitutions
 - POST `/api/v1/institutions` (sys_admin-only)

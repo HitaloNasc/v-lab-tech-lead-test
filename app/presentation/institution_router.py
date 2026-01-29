@@ -1,24 +1,26 @@
-from fastapi import APIRouter, Depends, status, Query
 from typing import List, Optional
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.application.institution_use_cases import (
+    CreateInstitution,
+    DeleteInstitution,
+    GetInstitutionById,
+    ListInstitutions,
+    UpdateInstitution,
+)
+from app.infrastructure.db import get_db
 from app.infrastructure.repositories.institution_repository_sqlalchemy import (
     InstitutionRepositorySQLAlchemy,
 )
-from app.application.institution_use_cases import (
-    CreateInstitution,
-    ListInstitutions,
-    GetInstitutionById,
-    UpdateInstitution,
-    DeleteInstitution,
-)
-from app.infrastructure.db import get_db
+from app.presentation.auth_decorators import require_auth, require_roles
 from app.presentation.schemas import (
     InstitutionCreate,
     InstitutionRead,
     InstitutionUpdate,
 )
-from app.domain.institution import Institution
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/v1/institutions", tags=["institutions"])
 
@@ -28,6 +30,8 @@ def get_institution_repo(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/", response_model=InstitutionRead, status_code=status.HTTP_201_CREATED)
+@require_auth
+@require_roles("sys_admin")
 async def create_institution(
     inst_in: InstitutionCreate,
     repo: InstitutionRepositorySQLAlchemy = Depends(get_institution_repo),
@@ -67,6 +71,8 @@ async def get_institution_by_id(
 
 
 @router.put("/{institution_id}", response_model=InstitutionRead)
+@require_auth
+@require_roles("sys_admin")
 async def update_institution(
     institution_id: UUID,
     inst_in: InstitutionUpdate,
@@ -88,6 +94,8 @@ async def update_institution(
 
 
 @router.delete("/{institution_id}", status_code=status.HTTP_204_NO_CONTENT)
+@require_auth
+@require_roles("sys_admin")
 async def delete_institution(
     institution_id: UUID,
     deleted_by: UUID,

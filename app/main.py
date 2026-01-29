@@ -2,6 +2,7 @@ import time
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
+from fastapi.openapi.utils import get_openapi
 
 from app.config.settings import get_settings
 from app.infrastructure.logging import JsonLogger, mask_ip, mask_user_id
@@ -23,9 +24,40 @@ app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
 register_exception_handlers(app)
 app.add_middleware(RequestIdMiddleware)
 
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=settings.APP_NAME, version=settings.APP_VERSION, routes=app.routes
+    )
+    components = openapi_schema.setdefault("components", {})
+    security_schemes = components.setdefault("securitySchemes", {})
+    security_schemes.setdefault(
+        "BearerAuth",
+        {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        },
+    )
+    # Set a global security requirement so the OpenAPI UI shows the lock/authorize button
+    openapi_schema.setdefault("security", [{"BearerAuth": []}])
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
+
 # ----------------------------------
 # Routers
 # ----------------------------------
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 
 app.include_router(
     auth_router,
@@ -98,16 +130,6 @@ app.include_router(
 )
 
 logger = JsonLogger(service="main")
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-@app.get("/")
-def root():
-    return {"message": "V-Lab API running"}
 
 
 @app.middleware("http")

@@ -20,8 +20,8 @@ class OfferCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: Optional[str] = Field(default=None, max_length=5000)
     type: OfferType
-    publication_date: datetime
-    application_deadline: datetime
+    publication_date: date
+    application_deadline: date
 
 
 class OfferUpdate(BaseModel):
@@ -29,8 +29,8 @@ class OfferUpdate(BaseModel):
     description: Optional[str] = Field(default=None, max_length=5000)
     type: Optional[OfferType] = None
     status: Optional[OfferStatus] = None
-    publication_date: Optional[datetime] = None
-    application_deadline: Optional[datetime] = None
+    publication_date: Optional[date] = None
+    application_deadline: Optional[date] = None
     program_id: Optional[UUID] = None
 
 
@@ -75,6 +75,7 @@ class UserUpdate(BaseModel):
     institution_id: Optional[UUID] = (
         None  # required when role includes 'admin' (business rule)
     )
+    candidate_profile: Optional["CandidateProfileUpdate"] = None
 
 
 class UserRead(BaseModel):
@@ -327,3 +328,7 @@ class ApplicationRead(BaseModel):
     @classmethod
     def from_domain(cls, app):
         return cls(**app.__dict__)
+
+
+# resolve forward refs
+UserUpdate.update_forward_refs()

@@ -26,6 +26,12 @@ class ApplicationRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_by_offer(
+        self, offer_id: UUID, limit: int = 20, offset: int = 0
+    ) -> List[Application]:
+        pass
+
+    @abstractmethod
     async def update(self, application: Application) -> Application:
         pass
 

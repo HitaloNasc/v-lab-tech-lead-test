@@ -1,30 +1,33 @@
-from fastapi import APIRouter, Depends, status
 from typing import List
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.application.application_use_cases import (
+    CreateApplication,
+    DeleteApplication,
+    GetApplicationById,
+    ListApplicationsByCandidate,
+    UpdateApplication,
+)
+from app.domain.errors import NotFoundError
+from app.infrastructure.db import get_db
 from app.infrastructure.repositories.application_repository_sqlalchemy import (
     ApplicationRepositorySQLAlchemy,
-)
-from app.infrastructure.repositories.offer_repository_sqlalchemy import (
-    OfferRepositorySQLAlchemy,
 )
 from app.infrastructure.repositories.candidate_profile_repository_sqlalchemy import (
     CandidateProfileRepositorySQLAlchemy,
 )
-from app.application.application_use_cases import (
-    CreateApplication,
-    GetApplicationById,
-    ListApplicationsByCandidate,
-    UpdateApplication,
-    DeleteApplication,
+from app.infrastructure.repositories.offer_repository_sqlalchemy import (
+    OfferRepositorySQLAlchemy,
 )
-from app.infrastructure.db import get_db
+from app.presentation.auth_decorators import require_auth, require_roles
 from app.presentation.schemas import (
     ApplicationCreate,
     ApplicationRead,
     ApplicationUpdate,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.domain.errors import NotFoundError
 
 router = APIRouter(prefix="/api/v1/applications", tags=["applications"])
 
@@ -42,6 +45,8 @@ def get_profile_repo(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)
+@require_auth
+@require_roles("candidate")
 async def create_application(
     app_in: ApplicationCreate,
     app_repo: ApplicationRepositorySQLAlchemy = Depends(get_application_repo),

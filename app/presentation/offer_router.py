@@ -1,26 +1,40 @@
-from fastapi import APIRouter, Depends, status, Query
 from typing import List, Optional
 from uuid import UUID
-from app.domain.offer import OfferType, OfferStatus
+
+from fastapi import APIRouter, Depends, Query, status, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.application.offer_use_cases import (
+    CreateOffer,
+    DeleteOffer,
+    GetOfferById,
+    ListOffers,
+    UpdateOffer,
+)
+from app.domain.offer import OfferStatus, OfferType
+from app.infrastructure.db import get_db
+from app.infrastructure.repositories.institution_repository_sqlalchemy import (
+    InstitutionRepositorySQLAlchemy,
+)
 from app.infrastructure.repositories.offer_repository_sqlalchemy import (
     OfferRepositorySQLAlchemy,
 )
-from app.infrastructure.repositories.institution_repository_sqlalchemy import (
-    InstitutionRepositorySQLAlchemy,
+from app.infrastructure.repositories.application_repository_sqlalchemy import (
+    ApplicationRepositorySQLAlchemy,
+)
+from app.infrastructure.repositories.user_repository_sqlalchemy import (
+    UserRepositorySQLAlchemy,
 )
 from app.infrastructure.repositories.program_repository_sqlalchemy import (
     ProgramRepositorySQLAlchemy,
 )
-from app.application.offer_use_cases import (
-    CreateOffer,
-    ListOffers,
-    GetOfferById,
-    UpdateOffer,
-    DeleteOffer,
+from app.presentation.auth_decorators import require_auth, require_roles
+from app.presentation.schemas import (
+    ApplicationRead,
+    OfferCreate,
+    OfferRead,
+    OfferUpdate,
 )
-from app.infrastructure.db import get_db
-from app.presentation.schemas import OfferCreate, OfferRead, OfferUpdate
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/v1/offers", tags=["offers"])
 
@@ -37,7 +51,17 @@ def get_program_repo(db: AsyncSession = Depends(get_db)):
     return ProgramRepositorySQLAlchemy(lambda: db)
 
 
+def get_application_repo(db: AsyncSession = Depends(get_db)):
+    return ApplicationRepositorySQLAlchemy(lambda: db)
+
+
+def get_user_repo(db: AsyncSession = Depends(get_db)):
+    return UserRepositorySQLAlchemy(lambda: db)
+
+
 @router.post("/", response_model=OfferRead, status_code=status.HTTP_201_CREATED)
+@require_auth
+@require_roles("institution_admin", "sys_admin")
 async def create_offer(
     offer_in: OfferCreate,
     repo: OfferRepositorySQLAlchemy = Depends(get_offer_repo),
@@ -85,7 +109,37 @@ async def get_offer_by_id(
     return OfferRead.from_domain(offer)
 
 
+@router.get("/{offer_id}/applications", response_model=List[ApplicationRead])
+@require_auth
+@require_roles("institution_admin", "sys_admin")
+async def list_applications_for_offer(
+    offer_id: UUID,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    app_repo: ApplicationRepositorySQLAlchemy = Depends(get_application_repo),
+    offer_repo: OfferRepositorySQLAlchemy = Depends(get_offer_repo),
+    user_repo: UserRepositorySQLAlchemy = Depends(get_user_repo),
+    request: Request = None,
+):
+    from app.application.application_use_cases import ListApplicationsByOffer
+
+    # request.state.user is attached by the auth decorator
+    user = getattr(request.state, "user", None)
+    requester_id = UUID(str(getattr(user, "id")))
+    requester_roles = getattr(user, "roles", [])
+
+    use_case = ListApplicationsByOffer(app_repo, offer_repo, user_repo)
+    apps = await use_case.execute(
+        offer_id, requester_id, requester_roles, limit=limit, offset=offset
+    )
+    from app.presentation.schemas import ApplicationRead
+
+    return [ApplicationRead.from_domain(a) for a in apps]
+
+
 @router.put("/{offer_id}", response_model=OfferRead)
+@require_auth
+@require_roles("institution_admin", "sys_admin")
 async def update_offer(
     offer_id: UUID,
     offer_in: OfferUpdate,
@@ -106,6 +160,8 @@ async def update_offer(
 
 
 @router.delete("/{offer_id}", status_code=status.HTTP_204_NO_CONTENT)
+@require_auth
+@require_roles("institution_admin", "sys_admin")
 async def delete_offer(
     offer_id: UUID,
     deleted_by: UUID,

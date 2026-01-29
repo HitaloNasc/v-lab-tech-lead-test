@@ -6,7 +6,15 @@ from app.domain.application import Application
 from app.domain.application_repository import ApplicationRepository
 from app.domain.offer_repository import OfferRepository
 from app.domain.candidate_profile_repository import CandidateProfileRepository
-from app.domain.errors import ValidationError, NotFoundError, ConflictError
+from app.domain.user_repository import UserRepository
+from app.domain.errors import (
+    ForbiddenError,
+    ValidationError,
+    NotFoundError,
+    ConflictError,
+    BusinessRuleViolation,
+)
+from app.domain.offer import OfferStatus
 
 
 class CreateApplication:
@@ -37,6 +45,13 @@ class CreateApplication:
                 message="Offer expired or deadline passed",
                 details=[{"field": "offer_id", "reason": "expired"}],
             )
+
+        # check offer status (prevent applying to closed/non-published offers)
+        if getattr(offer, "status", None) != OfferStatus.PUBLISHED:
+            raise BusinessRuleViolation(
+                message="Offer not open for applications",
+                details=[{"field": "offer_id", "reason": "closed or not published"}],
+            )
         # validate candidate profile exists
         profile = await self.profile_repo.get_by_id(candidate_profile_id)
         if not profile:
@@ -60,6 +75,56 @@ class CreateApplication:
             candidate_profile_id=candidate_profile_id, offer_id=offer_id
         )
         return await self.repo.create(application)
+
+
+class ListApplicationsByOffer:
+    def __init__(
+        self,
+        repo: ApplicationRepository,
+        offer_repo: OfferRepository,
+        user_repo: UserRepository,
+    ):
+        self.repo = repo
+        self.offer_repo = offer_repo
+        self.user_repo = user_repo
+
+    async def execute(
+        self,
+        offer_id,
+        requester_id,
+        requester_roles: list,
+        limit: int = 20,
+        offset: int = 0,
+    ):
+        # validate offer exists
+        offer = await self.offer_repo.get_by_id(offer_id)
+        if not offer:
+            raise NotFoundError(
+                message="Offer not found",
+                details=[{"field": "offer_id", "reason": "not found"}],
+            )
+
+        normalized_roles = [str(r).lower() for r in (requester_roles or [])]
+
+        # if requester is institution_admin, ensure same institution
+        if "institution_admin" in normalized_roles:
+            user = await self.user_repo.get_by_id(requester_id)
+            if not user:
+                raise NotFoundError(
+                    message="User not found",
+                    details=[{"field": "user_id", "reason": "not found"}],
+                )
+            if getattr(user, "institution_id", None) != getattr(
+                offer, "institution_id", None
+            ):
+                raise ForbiddenError(
+                    message="Not allowed to view applications for this offer",
+                    details=[{"field": "offer_id", "reason": "institution_mismatch"}],
+                )
+
+        # sys_admins or validated institution_admins can list
+        apps = await self.repo.list_by_offer(offer_id, limit=limit, offset=offset)
+        return apps
 
 
 class GetApplicationById:
