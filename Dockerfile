@@ -25,5 +25,10 @@ ENV APP_ENV=prod
 # Porta padrão do Uvicorn
 EXPOSE 8000
 
-# Comando de inicialização
+# Copia entrypoint para executar migrations antes de iniciar
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Comando de inicialização (entrypoint executa migrations e depois o cmd)
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
